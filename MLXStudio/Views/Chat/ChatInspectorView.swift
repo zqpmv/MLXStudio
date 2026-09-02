@@ -17,7 +17,7 @@ struct ChatInspectorView: View {
                     get: { selectedModel },
                     set: { onModelChange($0) }
                 )) {
-                    ForEach(ModelCatalog.featured) { model in
+                    ForEach(ModelCatalog.availableModels(including: selectedModel)) { model in
                         Text(model.displayName).tag(model)
                     }
                 }

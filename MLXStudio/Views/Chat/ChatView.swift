@@ -67,7 +67,7 @@ struct ChatView: View {
                     get: { appState.engine.selectedModel },
                     set: { appState.engine.selectModel($0) }
                 )) {
-                    ForEach(ModelCatalog.featured) { model in
+                    ForEach(ModelCatalog.availableModels(including: appState.engine.selectedModel)) { model in
                         Text(model.displayName).tag(model)
                     }
                 }
@@ -158,8 +158,8 @@ struct ChatView: View {
         guard let index = appState.conversations.firstIndex(where: { $0.id == conversation.id }) else { return }
         appState.conversations[index].messages = newMessages
         appState.conversations[index].updatedAt = .now
-        if let firstUser = newMessages.first(where: { $0.role == .user }) {
-            let title = String(firstUser.content.prefix(40))
+        if let lastUser = newMessages.last(where: { $0.role == .user }) {
+            let title = String(lastUser.content.prefix(40))
             if !title.isEmpty {
                 appState.conversations[index].title = title
             }
@@ -177,22 +177,31 @@ struct ChatView: View {
         var currentMessages = messages
         if let systemIndex = currentMessages.firstIndex(where: { $0.role == .system }) {
             currentMessages[systemIndex].content = appState.generationSettings.systemPrompt
+        } else {
+            currentMessages.insert(.system(appState.generationSettings.systemPrompt), at: 0)
         }
         currentMessages.append(.user(text))
         currentMessages.append(.assistant(""))
         updateMessages(currentMessages)
 
         appState.syncGenerationSettings()
-        appState.engine.resetSession(systemPrompt: appState.generationSettings.systemPrompt)
 
         generateTask = Task {
             do {
                 var fullMessages = currentMessages
-                for try await chunk in appState.engine.streamResponse(to: text) {
+                let generation = try await appState.engine.generate(messages: fullMessages)
+                for await event in generation {
                     if Task.isCancelled { break }
-                    if let idx = fullMessages.indices.last {
-                        fullMessages[idx].content += chunk
-                        updateMessages(fullMessages)
+                    switch event {
+                    case .chunk(let chunk):
+                        if let idx = fullMessages.indices.last {
+                            fullMessages[idx].content += chunk
+                            updateMessages(fullMessages)
+                        }
+                    case .info(let info):
+                        tokensPerSecond = info.tokensPerSecond
+                    case .toolCall:
+                        break
                     }
                 }
             } catch {
@@ -214,6 +223,5 @@ struct ChatView: View {
     private func clearChat() {
         stopGeneration()
         updateMessages([.system(appState.generationSettings.systemPrompt)])
-        appState.engine.resetSession()
     }
 }

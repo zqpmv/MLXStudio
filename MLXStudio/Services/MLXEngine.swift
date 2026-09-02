@@ -26,7 +26,7 @@ final class MLXEngine {
 
     private var modelCache = NSCache<NSString, ModelContainer>()
     private var chatSession: ChatSession?
-    private var generationTask: Task<Void, Never>?
+    private var activeStreamTask: Task<Void, Never>?
 
     init() {
         modelCache.countLimit = 3
@@ -34,7 +34,7 @@ final class MLXEngine {
     }
 
     var isModelLoaded: Bool {
-        loadedModelID == selectedModel.id && chatSession != nil
+        loadedModelID == selectedModel.id && modelCache.object(forKey: selectedModel.id as NSString) != nil
     }
 
     func selectModel(_ model: LMModel) {
@@ -48,6 +48,7 @@ final class MLXEngine {
     }
 
     func unloadModel() {
+        cancelGeneration()
         chatSession = nil
         loadedModelID = nil
         modelCache.removeAllObjects()
@@ -102,7 +103,7 @@ final class MLXEngine {
 
     func streamResponse(to prompt: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task { @MainActor in
                 do {
                     try await self.ensureModelLoaded()
                     guard let session = self.chatSession else {
@@ -110,14 +111,28 @@ final class MLXEngine {
                     }
                     self.state = .generating
                     for try await chunk in session.streamResponse(to: prompt) {
+                        if Task.isCancelled { break }
                         continuation.yield(chunk)
                     }
                     self.state = .ready
                     continuation.finish()
+                } catch is CancellationError {
+                    self.state = .ready
+                    continuation.finish()
                 } catch {
-                    self.state = .error(error.localizedDescription)
-                    continuation.finish(throwing: error)
+                    if Task.isCancelled {
+                        self.state = .ready
+                        continuation.finish()
+                    } else {
+                        self.state = .error(error.localizedDescription)
+                        continuation.finish(throwing: error)
+                    }
                 }
+                self.activeStreamTask = nil
+            }
+            self.activeStreamTask = task
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }
@@ -146,7 +161,7 @@ final class MLXEngine {
         let userInput = UserInput(chat: chat)
         state = .generating
 
-        return try await container.perform { (context: ModelContext) in
+        let rawStream = try await container.perform { (context: ModelContext) in
             let lmInput = try await context.processor.prepare(input: userInput)
             return try MLXLMCommon.generate(
                 input: lmInput,
@@ -154,11 +169,32 @@ final class MLXEngine {
                 context: context
             )
         }
+
+        return AsyncStream { continuation in
+            let task = Task { @MainActor in
+                for await event in rawStream {
+                    if Task.isCancelled { break }
+                    if case .info(let info) = event {
+                        self.lastTokensPerSecond = info.tokensPerSecond
+                    }
+                    continuation.yield(event)
+                }
+                continuation.finish()
+                if case .generating = self.state {
+                    self.state = .ready
+                }
+                self.activeStreamTask = nil
+            }
+            self.activeStreamTask = task
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
+            }
+        }
     }
 
     func cancelGeneration() {
-        generationTask?.cancel()
-        generationTask = nil
+        activeStreamTask?.cancel()
+        activeStreamTask = nil
         if case .generating = state {
             state = .ready
         }

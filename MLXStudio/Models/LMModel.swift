@@ -139,4 +139,12 @@ enum ModelCatalog {
             description: "Custom model from Hugging Face."
         )
     }
+
+    /// Featured models plus the currently selected model when it is custom.
+    static func availableModels(including selected: LMModel) -> [LMModel] {
+        if featured.contains(where: { $0.id == selected.id }) {
+            return featured
+        }
+        return [selected] + featured
+    }
 }

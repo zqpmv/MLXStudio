@@ -21,6 +21,10 @@ final class LocalAPIServer {
 
         let parameters = NWParameters.tcp
         parameters.allowLocalEndpointReuse = true
+        parameters.requiredLocalEndpoint = NWEndpoint.hostPort(
+            host: NWEndpoint.Host("127.0.0.1"),
+            port: .any
+        )
 
         guard let port = NWEndpoint.Port(rawValue: UInt16(settings.port)) else {
             throw ServerError.invalidPort
@@ -42,6 +46,8 @@ final class LocalAPIServer {
                 case .ready:
                     self?.isRunning = true
                     self?.lastError = nil
+                case .cancelled:
+                    self?.isRunning = false
                 default:
                     break
                 }
@@ -49,7 +55,6 @@ final class LocalAPIServer {
         }
 
         listener?.start(queue: .global(qos: .userInitiated))
-        isRunning = true
     }
 
     func stop() {
@@ -102,9 +107,12 @@ final class LocalAPIServer {
         }
 
         let modelID = engine.selectedModel.huggingFaceID
-        let body = """
-        {"object":"list","data":[{"id":"\(modelID)","object":"model","owned_by":"MLXStudio"}]}
-        """
+        let body = APJSON.encode([
+            "object": "list",
+            "data": [
+                ["id": modelID, "object": "model", "owned_by": "MLXStudio"]
+            ]
+        ])
         await sendResponse(connection: connection, status: 200, body: body)
     }
 
@@ -143,32 +151,22 @@ final class LocalAPIServer {
                     }
                 }
 
-                let escaped = responseText
-                    .replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "\"", with: "\\\"")
-                    .replacingOccurrences(of: "\n", with: "\\n")
-
-                let body = """
-                {"id":"chatcmpl-\(UUID().uuidString)","object":"chat.completion","choices":[{"index":0,"message":{"role":"assistant","content":"\(escaped)"},"finish_reason":"stop"}]}
-                """
+                let body = APJSON.chatCompletion(content: responseText)
                 await sendResponse(connection: connection, status: 200, body: body)
             }
         } catch {
-            let errBody = #"{"error":"\#(error.localizedDescription)"}"#
+            let errBody = APJSON.encode(["error": error.localizedDescription])
             await sendResponse(connection: connection, status: 500, body: errBody)
         }
     }
 
     private func handleStreamingChat(connection: NWConnection, engine: MLXEngine, messages: [ChatMessage]) async {
         do {
+            await sendStreamHeaders(connection: connection)
             let generation = try await engine.generate(messages: messages)
             for await event in generation {
                 if case .chunk(let chunk) = event {
-                    let escaped = chunk
-                        .replacingOccurrences(of: "\\", with: "\\\\")
-                        .replacingOccurrences(of: "\"", with: "\\\"")
-                        .replacingOccurrences(of: "\n", with: "\\n")
-                    let sse = "data: {\"choices\":[{\"delta\":{\"content\":\"\(escaped)\"}}]}\n\n"
+                    let sse = APJSON.sseDelta(content: chunk)
                     await sendRaw(connection: connection, data: Data(sse.utf8))
                 }
             }
@@ -181,14 +179,23 @@ final class LocalAPIServer {
 
     private func readRequest(from connection: NWConnection) async -> Data? {
         var data = Data()
-        while true {
+        while data.count < 1_048_576 {
             let chunk = await receive(from: connection, maxLength: 65536)
             guard let chunk, !chunk.isEmpty else { break }
             data.append(chunk)
-            if let str = String(data: data, encoding: .utf8), str.contains("\r\n\r\n") {
+
+            guard let headerEnd = data.range(of: Data("\r\n\r\n".utf8)) else { continue }
+
+            let headerData = data[..<headerEnd.lowerBound]
+            guard let headerString = String(data: headerData, encoding: .utf8) else { break }
+
+            let contentLength = HTTPRequest.parseContentLength(from: headerString)
+            let bodyStart = headerEnd.upperBound
+            let bodyReceived = data.count - bodyStart
+
+            if bodyReceived >= contentLength {
                 break
             }
-            if data.count > 1_048_576 { break }
         }
         return data.isEmpty ? nil : data
     }
@@ -205,9 +212,27 @@ final class LocalAPIServer {
         }
     }
 
-    private func sendResponse(connection: NWConnection, status: Int, body: String, contentType: String = "application/json") async {
+    private func sendStreamHeaders(connection: NWConnection) async {
+        let headers = """
+        HTTP/1.1 200 OK\r
+        Content-Type: text/event-stream\r
+        Cache-Control: no-cache\r
+        Connection: close\r
+        Access-Control-Allow-Origin: *\r
+        \r
+        """
+        await sendRaw(connection: connection, data: Data(headers.utf8))
+    }
+
+    private func sendResponse(
+        connection: NWConnection,
+        status: Int,
+        body: String,
+        contentType: String = "application/json"
+    ) async {
+        let phrase = HTTPRequest.statusPhrase(for: status)
         let response = """
-        HTTP/1.1 \(status) OK\r
+        HTTP/1.1 \(status) \(phrase)\r
         Content-Type: \(contentType)\r
         Content-Length: \(body.utf8.count)\r
         Access-Control-Allow-Origin: *\r
@@ -238,6 +263,35 @@ enum ServerError: LocalizedError {
     }
 }
 
+private enum APJSON {
+    static func encode(_ object: [String: Any]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: object),
+              let string = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return string
+    }
+
+    static func chatCompletion(content: String, id: String = UUID().uuidString) -> String {
+        encode([
+            "id": "chatcmpl-\(id)",
+            "object": "chat.completion",
+            "choices": [
+                [
+                    "index": 0,
+                    "message": ["role": "assistant", "content": content],
+                    "finish_reason": "stop",
+                ] as [String: Any]
+            ],
+        ])
+    }
+
+    static func sseDelta(content: String) -> String {
+        let payload = encode(["choices": [["delta": ["content": content]]]])
+        return "data: \(payload)\n\n"
+    }
+}
+
 struct HTTPRequest {
     let method: String
     let path: String
@@ -246,10 +300,12 @@ struct HTTPRequest {
 
     static func parse(_ data: Data) -> HTTPRequest? {
         guard let raw = String(data: data, encoding: .utf8) else { return nil }
-        let parts = raw.components(separatedBy: "\r\n\r\n")
-        guard parts.count >= 1 else { return nil }
+        guard let headerEndRange = raw.range(of: "\r\n\r\n") else { return nil }
 
-        let headerLines = parts[0].components(separatedBy: "\r\n")
+        let headerSection = String(raw[..<headerEndRange.lowerBound])
+        let bodySection = String(raw[headerEndRange.upperBound...])
+
+        let headerLines = headerSection.components(separatedBy: "\r\n")
         guard let requestLine = headerLines.first else { return nil }
 
         let requestParts = requestLine.split(separator: " ")
@@ -267,7 +323,29 @@ struct HTTPRequest {
             }
         }
 
-        let body = parts.count > 1 ? parts[1...].joined(separator: "\r\n\r\n") : ""
-        return HTTPRequest(method: method, path: path, headers: headers, body: body)
+        return HTTPRequest(method: method, path: path, headers: headers, body: bodySection)
+    }
+
+    static func parseContentLength(from headerSection: String) -> Int {
+        for line in headerSection.components(separatedBy: "\r\n") {
+            let parts = line.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2,
+                  parts[0].lowercased() == "content-length",
+                  let length = Int(parts[1].trimmingCharacters(in: .whitespaces)) else { continue }
+            return length
+        }
+        return 0
+    }
+
+    static func statusPhrase(for code: Int) -> String {
+        switch code {
+        case 200: "OK"
+        case 400: "Bad Request"
+        case 401: "Unauthorized"
+        case 404: "Not Found"
+        case 500: "Internal Server Error"
+        case 503: "Service Unavailable"
+        default: "Error"
+        }
     }
 }

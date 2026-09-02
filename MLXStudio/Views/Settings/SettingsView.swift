@@ -54,7 +54,7 @@ struct GeneralSettingsTab: View {
                     get: { appState.engine.selectedModel },
                     set: { appState.engine.selectModel($0) }
                 )) {
-                    ForEach(ModelCatalog.featured) { model in
+                    ForEach(ModelCatalog.availableModels(including: appState.engine.selectedModel)) { model in
                         Text(model.displayName).tag(model)
                     }
                 }
