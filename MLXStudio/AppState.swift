@@ -6,6 +6,8 @@ import Observation
 final class AppState {
     let engine = MLXEngine()
     let apiServer = LocalAPIServer()
+    let mlxLMEnvironment = MLXLMEnvironment()
+    let mlxLMProcess = MLXLMProcessManager()
 
     var sidebarSelection: SidebarItem = .chat
     var conversations: [Conversation] = [Conversation(title: "New Chat")]
@@ -14,11 +16,16 @@ final class AppState {
     var generationSettings = GenerationSettings()
     var serverSettings = ServerSettings()
 
+    var showSetup: Bool {
+        !mlxLMEnvironment.setupCompleted
+    }
+
     init() {
         selectedConversationID = conversations.first?.id
         engine.generationSettings = generationSettings
         apiServer.engine = engine
         apiServer.settings = serverSettings
+        mlxLMEnvironment.copyBundledScriptsIfNeeded()
     }
 
     var selectedConversation: Conversation? {
@@ -51,6 +58,21 @@ final class AppState {
     func syncGenerationSettings() {
         engine.generationSettings = generationSettings
     }
+
+    func completeSetup() {
+        mlxLMEnvironment.markSetupComplete()
+        connectMLXLMIfReady()
+    }
+
+    func connectMLXLMIfReady() {
+        guard mlxLMEnvironment.status.isReady,
+              let pythonPath = mlxLMEnvironment.readyPythonPath else { return }
+        mlxLMProcess.configure(pythonPath: pythonPath, port: serverSettings.port)
+    }
+
+    var isPythonServerActive: Bool {
+        mlxLMEnvironment.preferPythonServer && mlxLMEnvironment.status.isReady && mlxLMProcess.isRunning
+    }
 }
 
 enum SidebarItem: String, CaseIterable, Identifiable, Hashable {
@@ -74,4 +96,5 @@ struct ServerSettings: Codable, Equatable {
     var isEnabled: Bool = false
     var requireAuth: Bool = false
     var apiToken: String = UUID().uuidString
+    var usePythonMLXServer: Bool = false
 }

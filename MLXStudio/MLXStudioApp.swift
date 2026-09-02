@@ -6,9 +6,23 @@ struct MLXStudioApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(appState)
-                .frame(minWidth: 960, minHeight: 640)
+            Group {
+                if appState.showSetup {
+                    SetupView()
+                } else {
+                    ContentView()
+                }
+            }
+            .environment(appState)
+            .frame(minWidth: 960, minHeight: 640)
+            .task {
+                if !appState.mlxLMEnvironment.setupCompleted {
+                    await appState.mlxLMEnvironment.checkInstallation()
+                } else if !appState.mlxLMEnvironment.status.isReady {
+                    await appState.mlxLMEnvironment.checkInstallation()
+                    appState.connectMLXLMIfReady()
+                }
+            }
         }
         .windowStyle(.automatic)
         .defaultSize(width: 1200, height: 780)
@@ -18,6 +32,11 @@ struct MLXStudioApp: App {
                     appState.createConversation()
                 }
                 .keyboardShortcut("n", modifiers: [.command])
+            }
+            CommandGroup(after: .appSettings) {
+                Button("Setup mlx-lm…") {
+                    appState.mlxLMEnvironment.setupCompleted = false
+                }
             }
         }
 

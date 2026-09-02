@@ -22,6 +22,30 @@ Native macOS application for running and managing MLX language models locally â€
 - Xcode 16+ with Metal Toolchain
 - 8 GB+ unified memory (16 GB+ recommended for 4B+ models)
 
+## mlx-lm Setup
+
+On first launch MLX Studio checks for **mlx-lm** (Python). If missing, it offers one-click install into:
+
+`~/Library/Application Support/MLXStudio/venv`
+
+### Automatic scripts (also in `Scripts/`)
+
+```bash
+# Check if mlx-lm is installed
+./Scripts/check-mlx-lm.sh
+
+# Install mlx-lm into Application Support venv
+./Scripts/install-mlx-lm.sh
+
+# Start OpenAI-compatible Python server
+./Scripts/start-mlx-lm-server.sh
+
+# Remove bundled venv
+./Scripts/uninstall-mlx-lm.sh
+```
+
+After install, enable **Use mlx-lm server** in the **Server** tab to run the Python backend on port 8080.
+
 ## Getting Started
 
 1. Open the project in Xcode:

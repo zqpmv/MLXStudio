@@ -24,6 +24,13 @@
 		AA000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000015; };
 		AA000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000016; };
 		AA000017 /* HubIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018; };
+		AA000018 /* MLXLMEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000019; };
+		AA000019 /* MLXLMProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020; };
+		AA000020 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000021; };
+		AA000021 /* install-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000022; };
+		AA000022 /* check-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000023; };
+		AA000023 /* start-mlx-lm-server.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000024; };
+		AA000024 /* uninstall-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000025; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +53,13 @@
 		BB000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BB000017 /* MLXStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MLXStudio.entitlements; sourceTree = "<group>"; };
 		BB000018 /* HubIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubIntegration.swift; sourceTree = "<group>"; };
+		BB000019 /* MLXLMEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMEnvironment.swift; sourceTree = "<group>"; };
+		BB000020 /* MLXLMProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMProcessManager.swift; sourceTree = "<group>"; };
+		BB000021 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		BB000022 /* install-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = install-mlx-lm.sh; sourceTree = "<group>"; };
+		BB000023 /* check-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = check-mlx-lm.sh; sourceTree = "<group>"; };
+		BB000024 /* start-mlx-lm-server.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = start-mlx-lm-server.sh; sourceTree = "<group>"; };
+		BB000025 /* uninstall-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = uninstall-mlx-lm.sh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +120,8 @@
 				BB000007 /* ModelStorage.swift */,
 				BB000008 /* LocalAPIServer.swift */,
 				BB000018 /* HubIntegration.swift */,
+				BB000019 /* MLXLMEnvironment.swift */,
+				BB000020 /* MLXLMProcessManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -118,6 +134,7 @@
 				EE000009 /* Models */,
 				EE000010 /* Server */,
 				EE000011 /* Settings */,
+				EE000012 /* Setup */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -126,8 +143,28 @@
 			isa = PBXGroup;
 			children = (
 				BB000016 /* Assets.xcassets */,
+				EE000013 /* Scripts */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		EE000012 /* Setup */ = {
+			isa = PBXGroup;
+			children = (
+				BB000021 /* SetupView.swift */,
+			);
+			path = Setup;
+			sourceTree = "<group>";
+		};
+		EE000013 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				BB000022 /* install-mlx-lm.sh */,
+				BB000023 /* check-mlx-lm.sh */,
+				BB000024 /* start-mlx-lm-server.sh */,
+				BB000025 /* uninstall-mlx-lm.sh */,
+			);
+			path = Scripts;
 			sourceTree = "<group>";
 		};
 		EE000008 /* Chat */ = {
@@ -235,6 +272,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA000016 /* Assets.xcassets in Resources */,
+				AA000021 /* install-mlx-lm.sh in Resources */,
+				AA000022 /* check-mlx-lm.sh in Resources */,
+				AA000023 /* start-mlx-lm-server.sh in Resources */,
+				AA000024 /* uninstall-mlx-lm.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +302,9 @@
 				AA000014 /* ServerView.swift in Sources */,
 				AA000015 /* SettingsView.swift in Sources */,
 				AA000017 /* HubIntegration.swift in Sources */,
+				AA000018 /* MLXLMEnvironment.swift in Sources */,
+				AA000019 /* MLXLMProcessManager.swift in Sources */,
+				AA000020 /* SetupView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

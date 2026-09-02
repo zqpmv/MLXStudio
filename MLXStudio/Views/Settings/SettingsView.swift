@@ -66,8 +66,45 @@ struct GeneralSettingsTab: View {
 }
 
 struct AdvancedSettingsTab: View {
+    @Environment(AppState.self) private var appState
+
     var body: some View {
         Form {
+            Section("mlx-lm") {
+                LabeledContent("Status") {
+                    if appState.mlxLMEnvironment.status.isReady {
+                        Text("Installed")
+                            .foregroundStyle(.green)
+                    } else {
+                        Text("Not installed")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                LabeledContent("Python venv") {
+                    Text(appState.mlxLMEnvironment.venvDirectory.path)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                        .lineLimit(2)
+                }
+
+                LabeledContent("Scripts") {
+                    Text(appState.mlxLMEnvironment.scriptsDirectory.path)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                        .lineLimit(2)
+                }
+
+                HStack {
+                    Button("Open Setup") {
+                        appState.mlxLMEnvironment.setupCompleted = false
+                    }
+                    Button("Recheck") {
+                        Task { await appState.mlxLMEnvironment.checkInstallation() }
+                    }
+                }
+            }
+
             Section("Memory") {
                 Text("MLX Studio limits GPU cache to 512 MB. Larger models may require more unified memory on your Mac.")
                     .font(.caption)
