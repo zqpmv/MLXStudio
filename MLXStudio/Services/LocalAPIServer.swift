@@ -103,7 +103,7 @@ final class LocalAPIServer {
 
         let modelID = engine.selectedModel.huggingFaceID
         let body = """
-        {"object":"list","data":[{"id":"\(modelID)","object":"model","owned_by":"mlx-studio"}]}
+        {"object":"list","data":[{"id":"\(modelID)","object":"model","owned_by":"MLXStudio"}]}
         """
         await sendResponse(connection: connection, status: 200, body: body)
     }
