@@ -1,4 +1,5 @@
 import Foundation
+import MLXLLM
 import MLXLMCommon
 
 enum ModelKind: String, Codable, Sendable {

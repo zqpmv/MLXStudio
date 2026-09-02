@@ -139,7 +139,7 @@ struct ChatView: View {
                     .font(.title2)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(canSend ? .accent : .secondary)
+            .foregroundStyle(canSend ? Color.accentColor : .secondary)
             .disabled(!canSend)
             .keyboardShortcut(.return, modifiers: .command)
         }

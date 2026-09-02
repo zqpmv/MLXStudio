@@ -149,23 +149,24 @@ final class MLXEngine {
             inputMessages.removeLast()
         }
 
-        let chat = inputMessages.map { message in
-            let role: Chat.Message.Role = switch message.role {
-            case .assistant: .assistant
-            case .user: .user
-            case .system: .system
-            }
-            return Chat.Message(role: role, content: message.content)
-        }
-
-        let userInput = UserInput(chat: chat)
+        let chatPayload = inputMessages.map { ($0.role, $0.content) }
+        let parameters = generationSettings.generateParameters
         state = .generating
 
         let rawStream = try await container.perform { (context: ModelContext) in
+            let chat = chatPayload.map { role, content in
+                let messageRole: Chat.Message.Role = switch role {
+                case .assistant: .assistant
+                case .user: .user
+                case .system: .system
+                }
+                return Chat.Message(role: messageRole, content: content)
+            }
+            let userInput = UserInput(chat: chat)
             let lmInput = try await context.processor.prepare(input: userInput)
             return try MLXLMCommon.generate(
                 input: lmInput,
-                parameters: self.generationSettings.generateParameters,
+                parameters: parameters,
                 context: context
             )
         }
