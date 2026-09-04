@@ -5,6 +5,10 @@ struct ModelsView: View {
     @State private var searchText = ""
     @State private var customModelID = ""
     @State private var showCustomSheet = false
+    @State private var showCommunitySheet = false
+    @State private var showDownloadsSheet = false
+    @State private var modelPendingDelete: LMModel?
+    @State private var deleteError: String?
 
     private var customModels: [LMModel] {
         appState.customHuggingFaceIDs.map { ModelCatalog.custom(huggingFaceID: $0) }
@@ -33,8 +37,8 @@ struct ModelsView: View {
                         )
                         .tag(model)
                         .contextMenu {
-                            Button("Remove", role: .destructive) {
-                                appState.removeCustomModel(huggingFaceID: model.huggingFaceID)
+                            Button("Delete Model", role: .destructive) {
+                                modelPendingDelete = model
                             }
                         }
                     }
@@ -49,12 +53,38 @@ struct ModelsView: View {
                         isLoaded: appState.engine.isModelLoaded && appState.engine.loadedModelID == model.id
                     )
                     .tag(model)
+                    .contextMenu {
+                        if ModelStorage.isDownloaded(model.huggingFaceID) {
+                            Button("Delete Model", role: .destructive) {
+                                modelPendingDelete = model
+                            }
+                        }
+                    }
                 }
             }
         }
         .listStyle(.sidebar)
         .searchable(text: $searchText, prompt: "Search models")
         .toolbar {
+            ToolbarItem {
+                Button {
+                    showDownloadsSheet = true
+                } label: {
+                    Label(
+                        appState.downloadQueue.activeCount > 0
+                            ? "Downloads (\(appState.downloadQueue.activeCount))"
+                            : "Downloads",
+                        systemImage: "arrow.down.circle"
+                    )
+                }
+            }
+            ToolbarItem {
+                Button {
+                    showCommunitySheet = true
+                } label: {
+                    Label("Browse Community", systemImage: "globe")
+                }
+            }
             ToolbarItem {
                 Button {
                     showCustomSheet = true
@@ -66,6 +96,70 @@ struct ModelsView: View {
         .sheet(isPresented: $showCustomSheet) {
             customModelSheet
         }
+        .sheet(isPresented: $showCommunitySheet) {
+            NavigationStack {
+                CommunityCatalogView()
+            }
+            .frame(minWidth: 640, minHeight: 520)
+            .environment(appState)
+        }
+        .sheet(isPresented: $showDownloadsSheet) {
+            NavigationStack {
+                DownloadQueueView()
+            }
+            .frame(minWidth: 520, minHeight: 420)
+            .environment(appState)
+        }
+        .confirmationDialog(
+            deleteTitle,
+            isPresented: Binding(
+                get: { modelPendingDelete != nil },
+                set: { if !$0 { modelPendingDelete = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Model", role: .destructive) {
+                guard let model = modelPendingDelete else { return }
+                do {
+                    try appState.deleteModel(model)
+                } catch {
+                    deleteError = error.localizedDescription
+                }
+                modelPendingDelete = nil
+            }
+        } message: {
+            Text(deleteMessage)
+        }
+        .alert("Couldn’t Delete Model", isPresented: Binding(
+            get: { deleteError != nil },
+            set: { if !$0 { deleteError = nil } }
+        )) {
+            Button("OK", role: .cancel) { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
+    }
+
+    private var deleteTitle: String {
+        if let model = modelPendingDelete {
+            return "Delete \(model.displayName)?"
+        }
+        return "Delete Model?"
+    }
+
+    private var deleteMessage: String {
+        guard let model = modelPendingDelete else {
+            return "This permanently deletes the downloaded files."
+        }
+        let isCustom = appState.customHuggingFaceIDs.contains(model.huggingFaceID)
+        let downloaded = ModelStorage.isDownloaded(model.huggingFaceID)
+        if isCustom && downloaded {
+            return "This removes the model from the catalog and permanently deletes the downloaded files."
+        }
+        if isCustom {
+            return "This removes the model from the catalog. You can add it again later."
+        }
+        return "This permanently deletes the downloaded files. You can download the model again later."
     }
 
     private func filter(_ models: [LMModel]) -> [LMModel] {

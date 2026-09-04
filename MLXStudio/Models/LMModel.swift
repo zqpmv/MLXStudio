@@ -17,6 +17,26 @@ struct LMModel: Identifiable, Hashable, Sendable {
 
     var huggingFaceID: String { configuration.name ?? id }
 
+    var usesThinkingTags: Bool {
+        let token = "\(id) \(huggingFaceID) \(displayName)".lowercased()
+        return token.contains("qwen3")
+            || token.contains("qwq")
+            || token.contains("deepseek-r1")
+            || token.contains("deepseek-r")
+            || token.contains("magistral")
+    }
+
+    var reasoningConfig: ReasoningConfig {
+        let token = "\(id) \(huggingFaceID)".lowercased()
+        if token.contains("deepseek-r") {
+            return .alwaysOnThinking
+        }
+        if usesThinkingTags {
+            return .thinkTagsWithEnableThinking
+        }
+        return .none
+    }
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

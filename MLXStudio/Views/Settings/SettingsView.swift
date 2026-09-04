@@ -14,7 +14,7 @@ struct SettingsView: View {
             AboutTab()
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
-        .frame(width: 480, height: 320)
+        .frame(width: 520, height: 420)
         .environment(appState)
     }
 }
@@ -105,10 +105,8 @@ struct AdvancedSettingsTab: View {
                 }
             }
 
-            Section("Memory") {
-                Text("MLX Studio limits GPU cache to 512 MB. Larger models may require more unified memory on your Mac.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Section("GPU Memory") {
+                GPUCacheLimitControl()
             }
 
             Section("Storage") {
@@ -122,6 +120,50 @@ struct AdvancedSettingsTab: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+}
+
+struct GPUCacheLimitControl: View {
+    @Environment(AppState.self) private var appState
+    @State private var draftLimit: Double = 512
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LabeledContent("Cache Limit") {
+                Text("\(Int(draftLimit)) MB")
+                    .font(.body.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Slider(value: $draftLimit, in: 128...8192, step: 128) { editing in
+                if !editing {
+                    appState.applyGPUCacheLimit(Int(draftLimit))
+                }
+            }
+            Stepper(
+                value: Binding(
+                    get: { draftLimit },
+                    set: {
+                        draftLimit = $0
+                        appState.applyGPUCacheLimit(Int($0))
+                    }
+                ),
+                in: 128...8192,
+                step: 128
+            ) {
+                EmptyView()
+            }
+            .labelsHidden()
+
+            Text("Release the slider or use the stepper, then the loaded model is unloaded so MLX can apply the new GPU cache limit.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            draftLimit = Double(appState.gpuCacheLimitMB)
+        }
+        .onChange(of: appState.gpuCacheLimitMB) { _, value in
+            draftLimit = Double(value)
+        }
     }
 }
 

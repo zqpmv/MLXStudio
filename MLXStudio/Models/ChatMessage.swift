@@ -12,16 +12,24 @@ final class ChatMessage: Identifiable, Codable, @unchecked Sendable {
     let id: UUID
     let role: MessageRole
     var content: String
+    var thinking: String
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, role, content, createdAt
+        case id, role, content, thinking, createdAt
     }
 
-    init(id: UUID = UUID(), role: MessageRole, content: String, createdAt: Date = .now) {
+    init(
+        id: UUID = UUID(),
+        role: MessageRole,
+        content: String,
+        thinking: String = "",
+        createdAt: Date = .now
+    ) {
         self.id = id
         self.role = role
         self.content = content
+        self.thinking = thinking
         self.createdAt = createdAt
     }
 
@@ -29,8 +37,18 @@ final class ChatMessage: Identifiable, Codable, @unchecked Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         role = try container.decode(MessageRole.self, forKey: .role)
-        content = try container.decode(String.self, forKey: .content)
+        let rawContent = try container.decode(String.self, forKey: .content)
+        let storedThinking = try container.decodeIfPresent(String.self, forKey: .thinking) ?? ""
         createdAt = try container.decode(Date.self, forKey: .createdAt)
+
+        if storedThinking.isEmpty, role == .assistant, rawContent.contains("<think") || rawContent.contains("</think") {
+            let split = ReasoningEventEmitter.splitStoredAssistant(rawContent)
+            thinking = split.thinking
+            content = split.answer
+        } else {
+            thinking = storedThinking
+            content = rawContent
+        }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -38,7 +56,19 @@ final class ChatMessage: Identifiable, Codable, @unchecked Sendable {
         try container.encode(id, forKey: .id)
         try container.encode(role, forKey: .role)
         try container.encode(content, forKey: .content)
+        try container.encode(thinking, forKey: .thinking)
         try container.encode(createdAt, forKey: .createdAt)
+    }
+
+    var isPlaceholder: Bool {
+        role == .assistant && content.isEmpty && thinking.isEmpty
+    }
+
+    /// Text sent back into the model, including think tags when present.
+    var modelContent: String {
+        let trimmedThinking = thinking.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedThinking.isEmpty else { return content }
+        return "<think>\n\(trimmedThinking)\n</think>\n\(content)"
     }
 
     static func system(_ content: String) -> ChatMessage {
@@ -49,8 +79,8 @@ final class ChatMessage: Identifiable, Codable, @unchecked Sendable {
         ChatMessage(role: .user, content: content)
     }
 
-    static func assistant(_ content: String) -> ChatMessage {
-        ChatMessage(role: .assistant, content: content)
+    static func assistant(_ content: String, thinking: String = "") -> ChatMessage {
+        ChatMessage(role: .assistant, content: content, thinking: thinking)
     }
 }
 

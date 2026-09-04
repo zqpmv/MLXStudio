@@ -7,17 +7,21 @@ final class AppState {
     let engine = MLXEngine()
     let mlxLMEnvironment = MLXLMEnvironment()
     let mlxLMProcess = MLXLMProcessManager()
+    let communityCatalog = CommunityCatalogService()
+    let downloadQueue = DownloadQueue()
 
     var sidebarSelection: SidebarItem = .chat
     var conversations: [Conversation] = [Conversation(title: "New Chat")]
     var selectedConversationID: UUID?
     var customHuggingFaceIDs: [String] = []
+    var modelStorageRevision = 0
 
     var generationSettings = GenerationSettings()
     var serverSettings = ServerSettings()
     var developerPane: DeveloperPane = .inference
     var customPresets: [InferencePreset] = []
     var selectedPresetID: UUID? = InferencePreset.chatID
+    var gpuCacheLimitMB: Int = 512
 
     private var persistTask: Task<Void, Never>?
 
@@ -52,7 +56,13 @@ final class AppState {
     init() {
         mlxLMEnvironment.copyBundledScriptsIfNeeded()
         showSetup = !mlxLMEnvironment.setupCompleted
+        downloadQueue.configure(engine: engine)
+        downloadQueue.onStorageChanged = { [weak self] in
+            self?.modelStorageRevision += 1
+            self?.schedulePersist()
+        }
         restorePersistedState()
+        engine.setCacheLimit(megabytes: gpuCacheLimitMB)
         engine.generationSettings = generationSettings
     }
 
@@ -89,6 +99,48 @@ final class AppState {
         } else {
             schedulePersist()
         }
+    }
+
+    func downloadModel(_ model: LMModel) {
+        let featured = ModelCatalog.featured.contains {
+            $0.huggingFaceID == model.huggingFaceID || $0.id == model.id
+        }
+        if !featured, !customHuggingFaceIDs.contains(model.huggingFaceID) {
+            customHuggingFaceIDs.insert(model.huggingFaceID, at: 0)
+        }
+        downloadQueue.enqueue(model)
+        schedulePersist()
+    }
+
+    func applyGPUCacheLimit(_ megabytes: Int) {
+        let clamped = min(max(megabytes, 128), 16384)
+        guard clamped != gpuCacheLimitMB else {
+            engine.setCacheLimit(megabytes: clamped)
+            return
+        }
+        gpuCacheLimitMB = clamped
+        engine.setCacheLimit(megabytes: clamped)
+        engine.unloadModel()
+        schedulePersist()
+    }
+
+    func deleteModel(_ model: LMModel) throws {
+        engine.evictModel(model)
+        let isCustom = customHuggingFaceIDs.contains(model.huggingFaceID)
+        do {
+            try ModelStorage.deleteDownloaded(huggingFaceID: model.huggingFaceID)
+        } catch {
+            let ignoredMissingFiles = isCustom
+                && (error as? ModelStorageError) == .nothingToDelete
+            if !ignoredMissingFiles {
+                throw error
+            }
+        }
+        if isCustom {
+            removeCustomModel(huggingFaceID: model.huggingFaceID)
+        }
+        modelStorageRevision += 1
+        schedulePersist()
     }
 
     func createConversation() {
@@ -196,7 +248,8 @@ final class AppState {
                 selectedModelID: engine.selectedModel.id,
                 customHuggingFaceIDs: customHuggingFaceIDs,
                 customPresets: customPresets,
-                selectedPresetID: selectedPresetID
+                selectedPresetID: selectedPresetID,
+                gpuCacheLimitMB: gpuCacheLimitMB
             )
         )
     }
@@ -216,6 +269,7 @@ final class AppState {
         customHuggingFaceIDs = snapshot.customHuggingFaceIDs
         customPresets = snapshot.customPresets ?? []
         selectedPresetID = snapshot.selectedPresetID ?? InferencePreset.chatID
+        gpuCacheLimitMB = snapshot.gpuCacheLimitMB ?? 512
 
         if let model = catalogModels.first(where: {
             $0.id == snapshot.selectedModelID || $0.huggingFaceID == snapshot.selectedModelID

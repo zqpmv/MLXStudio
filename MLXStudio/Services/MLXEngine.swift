@@ -27,16 +27,32 @@ final class MLXEngine {
     var downloadTotalBytes: Int64 = 0
     var downloadBytesPerSecond: Double = 0
     var lastTokensPerSecond: Double = 0
+    var downloadingHuggingFaceID: String?
+    var downloadingDisplayName: String?
 
     private var modelCache = NSCache<NSString, ModelContainer>()
     private var chatSession: ChatSession?
     private var activeStreamTask: Task<Void, Never>?
+    private var transferTask: Task<Void, Error>?
+    private var transferKind: TransferKind = .download
     private var lastDownloadSampleDate: Date?
     private var lastDownloadSampleBytes: Int64 = 0
+
+    private enum TransferKind {
+        /// Fetching weights from Hugging Face for later use.
+        case download
+        /// Loading a model into memory (may still download missing files first).
+        case load
+    }
 
     init() {
         modelCache.countLimit = 3
         Memory.cacheLimit = 512 * 1024 * 1024
+    }
+
+    func setCacheLimit(megabytes: Int) {
+        let mb = min(max(megabytes, 128), 16384)
+        Memory.cacheLimit = mb * 1024 * 1024
     }
 
     var isModelLoaded: Bool {
@@ -49,8 +65,8 @@ final class MLXEngine {
         if loadedModelID != model.id {
             chatSession = nil
             loadedModelID = nil
-            state = .idle
         }
+        applyVisibleState()
     }
 
     func unloadModel() {
@@ -62,13 +78,22 @@ final class MLXEngine {
         state = .idle
     }
 
+    func evictModel(_ model: LMModel) {
+        cancelGeneration()
+        modelCache.removeObject(forKey: model.id as NSString)
+        if loadedModelID == model.id {
+            chatSession = nil
+            loadedModelID = nil
+            resetDownloadStats()
+            state = .idle
+        }
+    }
+
     func loadModel() async throws {
         guard loadedModelID != selectedModel.id else {
             state = .ready
             return
         }
-
-        state = .loading
 
         if let cached = modelCache.object(forKey: selectedModel.id as NSString) {
             chatSession = makeSession(with: cached)
@@ -77,29 +102,52 @@ final class MLXEngine {
             return
         }
 
-        let factory = LLMModelFactory.shared
-
-        do {
+        let model = selectedModel
+        state = .loading
+        try await runTransfer(for: model, kind: .load) {
+            let factory = LLMModelFactory.shared
             let container = try await factory.loadContainer(
                 from: HuggingFaceIntegration.sharedDownloader,
                 using: HuggingFaceIntegration.sharedTokenizerLoader,
-                configuration: selectedModel.configuration
+                configuration: model.configuration
             ) { [weak self] progress in
                 Task { @MainActor in
                     self?.recordDownload(progress)
                 }
             }
-
-            modelCache.setObject(container, forKey: selectedModel.id as NSString)
-            chatSession = makeSession(with: container)
-            loadedModelID = selectedModel.id
-            resetDownloadStats()
-            state = .ready
-        } catch {
-            resetDownloadStats()
-            state = .error(error.localizedDescription)
-            throw error
+            self.modelCache.setObject(container, forKey: model.id as NSString)
+            self.chatSession = self.makeSession(with: container)
+            self.loadedModelID = model.id
         }
+    }
+
+    func downloadWeights(for model: LMModel) async throws {
+        switch model.configuration.id {
+        case .directory:
+            return
+        case .id(let id, let revision):
+            try await runTransfer(for: model, kind: .download) {
+                _ = try await HuggingFaceIntegration.sharedDownloader.download(
+                    id: id,
+                    revision: revision,
+                    matching: ["*.safetensors", "*.json", "*.jinja"],
+                    useLatest: false
+                ) { [weak self] progress in
+                    Task { @MainActor in
+                        self?.recordDownload(progress)
+                    }
+                }
+            }
+        }
+    }
+
+    func cancelDownload() {
+        guard transferTask != nil || downloadingHuggingFaceID != nil else { return }
+        transferTask?.cancel()
+        transferTask = nil
+        downloadProgress?.cancel()
+        clearTransfer()
+        applyVisibleState()
     }
 
     func ensureModelLoaded() async throws {
@@ -157,13 +205,16 @@ final class MLXEngine {
         }
 
         var inputMessages = messages
-        if let last = inputMessages.last, last.role == .assistant, last.content.isEmpty {
+        if let last = inputMessages.last, last.isPlaceholder {
             inputMessages.removeLast()
         }
 
-        let chatPayload = inputMessages.map { ($0.role, $0.content) }
+        let chatPayload = inputMessages.map { ($0.role, $0.modelContent) }
         let parameters = generationSettings.generateParameters
         state = .generating
+        let extraContext = try? selectedModel.reasoningConfig.promptStrategy.additionalContext(
+            forThinkingEnabled: selectedModel.usesThinkingTags ? true : nil
+        )
 
         let rawStream = try await container.perform { (context: ModelContext) in
             let chat = chatPayload.map { role, content in
@@ -174,7 +225,10 @@ final class MLXEngine {
                 }
                 return Chat.Message(role: messageRole, content: content)
             }
-            let userInput = UserInput(chat: chat)
+            let userInput = UserInput(
+                chat: chat,
+                additionalContext: extraContext
+            )
             let lmInput = try await context.processor.prepare(input: userInput)
             return try MLXLMCommon.generate(
                 input: lmInput,
@@ -214,17 +268,96 @@ final class MLXEngine {
     }
 
     var isDownloading: Bool {
-        if case .downloading = state { return true }
-        return false
+        downloadingHuggingFaceID != nil && transferKind == .download
+    }
+
+    var isDownloadingSelectedModel: Bool {
+        isDownloading && downloadingHuggingFaceID == selectedModel.huggingFaceID
+    }
+
+    private func runTransfer(
+        for model: LMModel,
+        kind: TransferKind,
+        operation: @escaping () async throws -> Void
+    ) async throws {
+        transferTask?.cancel()
+        transferKind = kind
+        downloadingHuggingFaceID = model.huggingFaceID
+        downloadingDisplayName = model.displayName
+        let task = Task<Void, Error> {
+            try await operation()
+        }
+        transferTask = task
+        do {
+            try await task.value
+            transferTask = nil
+            if downloadingHuggingFaceID == model.huggingFaceID {
+                clearTransfer()
+            }
+            applyVisibleState()
+        } catch is CancellationError {
+            transferTask = nil
+            if downloadingHuggingFaceID != nil {
+                clearTransfer()
+                applyVisibleState()
+            }
+            throw CancellationError()
+        } catch {
+            transferTask = nil
+            if Task.isCancelled {
+                if downloadingHuggingFaceID != nil {
+                    clearTransfer()
+                    applyVisibleState()
+                }
+                throw CancellationError()
+            }
+            clearTransfer()
+            state = .error(error.localizedDescription)
+            throw error
+        }
+    }
+
+    private func clearTransfer() {
+        downloadingHuggingFaceID = nil
+        downloadingDisplayName = nil
+        resetDownloadStats()
+    }
+
+    private func applyVisibleState() {
+        if downloadingHuggingFaceID == selectedModel.huggingFaceID {
+            state = transferState()
+        } else if isModelLoaded {
+            state = .ready
+        } else {
+            state = .idle
+        }
+    }
+
+    /// Maps the current transfer into a user-visible engine state, distinguishing
+    /// a background download from loading a model into memory. While a load is
+    /// still fetching missing files it shows download progress; once the files are
+    /// in place it reports `.loading` instead of a stuck "Downloading 100%".
+    private func transferState() -> EngineState {
+        switch transferKind {
+        case .download:
+            return .downloading(progress: downloadFraction)
+        case .load:
+            let downloadComplete = downloadFraction >= 1
+                || (downloadTotalBytes > 0 && downloadCompletedBytes >= downloadTotalBytes)
+            return downloadComplete ? .loading : .downloading(progress: downloadFraction)
+        }
     }
 
     private func recordDownload(_ progress: Progress) {
+        guard downloadingHuggingFaceID != nil else { return }
         downloadProgress = progress
         downloadCompletedBytes = progress.completedUnitCount
         downloadTotalBytes = max(progress.totalUnitCount, 0)
         let fraction = progress.fractionCompleted
         downloadFraction = fraction.isFinite ? min(max(fraction, 0), 1) : 0
-        state = .downloading(progress: downloadFraction)
+        if downloadingHuggingFaceID == selectedModel.huggingFaceID {
+            state = transferState()
+        }
 
         let now = Date()
         if let lastDate = lastDownloadSampleDate {

@@ -81,7 +81,7 @@ struct InferenceSettingsView: View {
                     ModelStatusBadge(state: appState.engine.state, isLoaded: appState.engine.isModelLoaded)
                 }
 
-                if appState.engine.isDownloading {
+                if appState.engine.isDownloadingSelectedModel {
                     ModelDownloadProgressView(
                         fraction: appState.engine.downloadFraction,
                         completedBytes: appState.engine.downloadCompletedBytes,
@@ -91,6 +91,25 @@ struct InferenceSettingsView: View {
                 }
 
                 HStack {
+                    if appState.engine.isDownloading || appState.downloadQueue.isActive(appState.engine.selectedModel.huggingFaceID) {
+                        Button("Stop Download", role: .destructive) {
+                            appState.downloadQueue.cancel(for: appState.engine.selectedModel.huggingFaceID)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+
+                    Button(appState.downloadQueue.isActive(appState.engine.selectedModel.huggingFaceID) ? "Queued" : "Download") {
+                        appState.downloadModel(appState.engine.selectedModel)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(
+                        ModelStorage.isDownloaded(appState.engine.selectedModel.huggingFaceID)
+                            || appState.downloadQueue.isActive(appState.engine.selectedModel.huggingFaceID)
+                            || appState.engine.state == .loading
+                    )
+
                     Button("Load") {
                         Task { try? await appState.engine.loadModel() }
                     }

@@ -57,11 +57,9 @@ Installation starts only after you click **Install mlx-lm**. App sandbox is disa
    open MLXStudio/MLXStudio.xcodeproj
    ```
 
-2. Select your **Development Team** in Signing & Capabilities (target: MLXStudio).
+2. Build and run (`⌘R`). The project uses local ad-hoc signing, so an Apple Developer team is not required. To ship outside your Mac, set a Development Team in Signing & Capabilities.
 
-3. Build and run (`⌘R`).
-
-4. On first launch, pick a model in **Models** → **Load Model**. Models download from Hugging Face automatically.
+3. On first launch, pick a model in **Models** → **Load Model**. Models download from Hugging Face automatically.
 
 ## Usage
 
@@ -81,6 +79,8 @@ mlx-community/Qwen3-4B-4bit
 ```
 
 ### Local Server
+
+Local Server stays on **mlx-lm** (`python -m mlx_lm.server`). A native Swift OpenAI server is a later option — see [osaurus](https://github.com/osaurus-ai/osaurus) and [maclocal-api](https://github.com/scouzi1966/maclocal-api).
 
 1. Open **Developer → Local Server**.
 2. Enable **Local Server** (default port: `8080`). MLX Studio reads models and status from the mlx-lm HTTP API.
@@ -104,8 +104,11 @@ MLXStudio/
 ├── MLXStudioApp.swift      # App entry point
 ├── AppState.swift          # Global state (engine, server, conversations)
 ├── Models/                 # Data models
+├── ViewModels/
+│   └── ChatViewModel.swift      # Chat generation, thinking split, scroll pin
 ├── Services/
 │   ├── MLXEngine.swift          # Chat inference (mlx-swift-lm)
+│   ├── ReasoningEventEmitter.swift # Official mlx-swift-lm think/answer scanner
 │   ├── HubIntegration.swift     # Hugging Face downloader/tokenizer bridge
 │   └── MLXLMProcessManager.swift # mlx-lm local server
 └── Views/                  # SwiftUI views
@@ -116,6 +119,8 @@ Built on:
 - [mlx-swift-lm](https://github.com/ml-explore/mlx-swift-lm) — LLM inference
 - [swift-huggingface](https://github.com/huggingface/swift-huggingface) — model downloads
 - [swift-transformers](https://github.com/huggingface/swift-transformers) — tokenizers
+
+Native apps used as structure/UI references (not Electron LM Studio / Ollama): [Klee](https://github.com/signerlabs/Klee), [ChatMLX](https://github.com/johnmai-dev/ChatMLX), official [MLXChatExample](https://github.com/ml-explore/mlx-swift-examples/tree/main/Applications/MLXChatExample).
 
 ## Recommended Models by Memory
 
@@ -138,9 +143,9 @@ xcodebuild -downloadComponent MetalToolchain
 
 Use a smaller quantized model (0.6B–1.7B) or unload the current model before loading another.
 
-**Sandbox network**
+**Signing / provisioning profile**
 
-The app requires network access to download models from Hugging Face. This is enabled in entitlements.
+Local Debug/Release builds use ad-hoc signing (`Sign to Run Locally`). An Apple Developer account is not required to run on your Mac. A paid Developer Program membership is only needed to notarize or ship outside this machine.
 
 ## License
 

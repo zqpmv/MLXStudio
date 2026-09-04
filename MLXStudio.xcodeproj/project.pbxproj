@@ -7,37 +7,51 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA000001 /* MLXStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000001; };
-		AA000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000002; };
-		AA000003 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000003; };
-		AA000004 /* LMModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000004; };
-		AA000005 /* GenerationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000005; };
-		AA000006 /* MLXEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000006; };
-		AA000007 /* ModelStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000007; };
-		AA000009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000009; };
-		AA000010 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010; };
-		AA000011 /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000011; };
-		AA000012 /* ChatInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000012; };
-		AA000013 /* ModelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000013; };
-		AA000014 /* ServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000014; };
-		AA000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000015; };
-		AA000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000016; };
-		AA000017 /* HubIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018; };
-		AA000025 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000026; };
-		AA000026 /* InferencePreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000027; };
-		AA000027 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000028; };
-		AA000028 /* DeveloperPlaygroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000029; };
-		AA000018 /* MLXLMEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000019; };
-		AA000019 /* MLXLMProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020; };
-		AA000020 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000021; };
-		AA000021 /* install-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000022; };
-		AA000022 /* check-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000023; };
-		AA000023 /* start-mlx-lm-server.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000024; };
-		AA000024 /* uninstall-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000025; };
+		35F7883E304AC586007AC231 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = PKG000001 /* MLXLLM */; };
+		35F7883F304AC586007AC231 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = PKG000002 /* MLXLMCommon */; };
+		35F78840304AC586007AC231 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = PKG000004 /* HuggingFace */; };
+		35F78841304AC586007AC231 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = PKG000005 /* Tokenizers */; };
+		AA000001 /* MLXStudioApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000001 /* MLXStudioApp.swift */; };
+		AA000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000002 /* AppState.swift */; };
+		AA000003 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000003 /* ChatMessage.swift */; };
+		AA000004 /* LMModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000004 /* LMModel.swift */; };
+		AA000005 /* GenerationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000005 /* GenerationSettings.swift */; };
+		AA000006 /* MLXEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000006 /* MLXEngine.swift */; };
+		AA000007 /* ModelStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000007 /* ModelStorage.swift */; };
+		AA000009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000009 /* ContentView.swift */; };
+		AA000010 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010 /* ChatView.swift */; };
+		AA000011 /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000011 /* MessageBubbleView.swift */; };
+		AA000012 /* ChatInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000012 /* ChatInspectorView.swift */; };
+		AA000013 /* ModelsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000013 /* ModelsView.swift */; };
+		AA000014 /* ServerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000014 /* ServerView.swift */; };
+		AA000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000015 /* SettingsView.swift */; };
+		AA000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000016 /* Assets.xcassets */; };
+		AA000017 /* HubIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018 /* HubIntegration.swift */; };
+		AA000018 /* MLXLMEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000019 /* MLXLMEnvironment.swift */; };
+		AA000019 /* MLXLMProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020 /* MLXLMProcessManager.swift */; };
+		AA000020 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000021 /* SetupView.swift */; };
+		AA000021 /* install-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000022 /* install-mlx-lm.sh */; };
+		AA000022 /* check-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000023 /* check-mlx-lm.sh */; };
+		AA000023 /* start-mlx-lm-server.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000024 /* start-mlx-lm-server.sh */; };
+		AA000024 /* uninstall-mlx-lm.sh in Resources */ = {isa = PBXBuildFile; fileRef = BB000025 /* uninstall-mlx-lm.sh */; };
+		AA000025 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000026 /* Persistence.swift */; };
+		AA000026 /* InferencePreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000027 /* InferencePreset.swift */; };
+		AA000027 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000028 /* DeveloperView.swift */; };
+		AA000028 /* DeveloperPlaygroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000029 /* DeveloperPlaygroundView.swift */; };
+		AA000029 /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000030 /* ChatViewModel.swift */; };
+		AA000030 /* ReasoningConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000031 /* ReasoningConfig.swift */; };
+		AA000031 /* ReasoningEventEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000032 /* ReasoningEventEmitter.swift */; };
+		AA000032 /* ThinkingBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000033 /* ThinkingBlockView.swift */; };
+		AA000033 /* CommunityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000034 /* CommunityModel.swift */; };
+		AA000034 /* CommunityCatalogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000035 /* CommunityCatalogService.swift */; };
+		AA000035 /* CommunityCatalogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000036 /* CommunityCatalogView.swift */; };
+		AA000036 /* StudioCodeHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000037 /* StudioCodeHighlighter.swift */; };
+		AA000037 /* DownloadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000038 /* DownloadQueue.swift */; };
+		AA000038 /* DownloadQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000039 /* DownloadQueueView.swift */; };
+		35F78842304AC586007AC231 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = PKG000006 /* MarkdownUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CC000001 /* MLXStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MLXStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB000001 /* MLXStudioApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXStudioApp.swift; sourceTree = "<group>"; };
 		BB000002 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		BB000003 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
@@ -55,17 +69,28 @@
 		BB000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BB000017 /* MLXStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MLXStudio.entitlements; sourceTree = "<group>"; };
 		BB000018 /* HubIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubIntegration.swift; sourceTree = "<group>"; };
+		BB000019 /* MLXLMEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMEnvironment.swift; sourceTree = "<group>"; };
+		BB000020 /* MLXLMProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMProcessManager.swift; sourceTree = "<group>"; };
+		BB000021 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
+		BB000022 /* install-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "install-mlx-lm.sh"; sourceTree = "<group>"; };
+		BB000023 /* check-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "check-mlx-lm.sh"; sourceTree = "<group>"; };
+		BB000024 /* start-mlx-lm-server.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "start-mlx-lm-server.sh"; sourceTree = "<group>"; };
+		BB000025 /* uninstall-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "uninstall-mlx-lm.sh"; sourceTree = "<group>"; };
 		BB000026 /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		BB000027 /* InferencePreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferencePreset.swift; sourceTree = "<group>"; };
 		BB000028 /* DeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperView.swift; sourceTree = "<group>"; };
 		BB000029 /* DeveloperPlaygroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperPlaygroundView.swift; sourceTree = "<group>"; };
-		BB000019 /* MLXLMEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMEnvironment.swift; sourceTree = "<group>"; };
-		BB000020 /* MLXLMProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMProcessManager.swift; sourceTree = "<group>"; };
-		BB000021 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
-		BB000022 /* install-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = install-mlx-lm.sh; sourceTree = "<group>"; };
-		BB000023 /* check-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = check-mlx-lm.sh; sourceTree = "<group>"; };
-		BB000024 /* start-mlx-lm-server.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = start-mlx-lm-server.sh; sourceTree = "<group>"; };
-		BB000025 /* uninstall-mlx-lm.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = uninstall-mlx-lm.sh; sourceTree = "<group>"; };
+		BB000030 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		BB000031 /* ReasoningConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningConfig.swift; sourceTree = "<group>"; };
+		BB000032 /* ReasoningEventEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReasoningEventEmitter.swift; sourceTree = "<group>"; };
+		BB000033 /* ThinkingBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThinkingBlockView.swift; sourceTree = "<group>"; };
+		BB000034 /* CommunityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityModel.swift; sourceTree = "<group>"; };
+		BB000035 /* CommunityCatalogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityCatalogService.swift; sourceTree = "<group>"; };
+		BB000036 /* CommunityCatalogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommunityCatalogView.swift; sourceTree = "<group>"; };
+		BB000037 /* StudioCodeHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioCodeHighlighter.swift; sourceTree = "<group>"; };
+		BB000038 /* DownloadQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadQueue.swift; sourceTree = "<group>"; };
+		BB000039 /* DownloadQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadQueueView.swift; sourceTree = "<group>"; };
+		CC000001 /* MLXStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MLXStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +98,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				35F78842304AC586007AC231 /* MarkdownUI in Frameworks */,
+				35F78841304AC586007AC231 /* Tokenizers in Frameworks */,
+				35F78840304AC586007AC231 /* HuggingFace in Frameworks */,
+				35F7883F304AC586007AC231 /* MLXLMCommon in Frameworks */,
+				35F7883E304AC586007AC231 /* MLXLLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +124,7 @@
 				BB000002 /* AppState.swift */,
 				EE000004 /* Models */,
 				EE000005 /* Services */,
+				EE000015 /* ViewModels */,
 				EE000006 /* Views */,
 				EE000007 /* Resources */,
 				BB000017 /* MLXStudio.entitlements */,
@@ -114,6 +145,7 @@
 			children = (
 				BB000003 /* ChatMessage.swift */,
 				BB000004 /* LMModel.swift */,
+				BB000034 /* CommunityModel.swift */,
 				BB000005 /* GenerationSettings.swift */,
 				BB000027 /* InferencePreset.swift */,
 			);
@@ -129,6 +161,10 @@
 				BB000019 /* MLXLMEnvironment.swift */,
 				BB000020 /* MLXLMProcessManager.swift */,
 				BB000026 /* Persistence.swift */,
+				BB000031 /* ReasoningConfig.swift */,
+				BB000032 /* ReasoningEventEmitter.swift */,
+				BB000035 /* CommunityCatalogService.swift */,
+				BB000038 /* DownloadQueue.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -156,6 +192,44 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
+		EE000008 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				BB000010 /* ChatView.swift */,
+				BB000011 /* MessageBubbleView.swift */,
+				BB000033 /* ThinkingBlockView.swift */,
+				BB000037 /* StudioCodeHighlighter.swift */,
+				BB000012 /* ChatInspectorView.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		EE000009 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				BB000013 /* ModelsView.swift */,
+				BB000036 /* CommunityCatalogView.swift */,
+				BB000039 /* DownloadQueueView.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		EE000010 /* Server */ = {
+			isa = PBXGroup;
+			children = (
+				BB000014 /* ServerView.swift */,
+			);
+			path = Server;
+			sourceTree = "<group>";
+		};
+		EE000011 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				BB000015 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		EE000012 /* Setup */ = {
 			isa = PBXGroup;
 			children = (
@@ -175,6 +249,14 @@
 			path = Scripts;
 			sourceTree = "<group>";
 		};
+		EE000015 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				BB000030 /* ChatViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
 		EE000014 /* Developer */ = {
 			isa = PBXGroup;
 			children = (
@@ -182,40 +264,6 @@
 				BB000029 /* DeveloperPlaygroundView.swift */,
 			);
 			path = Developer;
-			sourceTree = "<group>";
-		};
-		EE000008 /* Chat */ = {
-			isa = PBXGroup;
-			children = (
-				BB000010 /* ChatView.swift */,
-				BB000011 /* MessageBubbleView.swift */,
-				BB000012 /* ChatInspectorView.swift */,
-			);
-			path = Chat;
-			sourceTree = "<group>";
-		};
-		EE000009 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				BB000013 /* ModelsView.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		EE000010 /* Server */ = {
-			isa = PBXGroup;
-			children = (
-				BB000014 /* ServerView.swift */,
-			);
-			path = Server;
-			sourceTree = "<group>";
-		};
-		EE000011 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				BB000015 /* SettingsView.swift */,
-			);
-			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -239,6 +287,7 @@
 				PKG000002 /* MLXLMCommon */,
 				PKG000004 /* HuggingFace */,
 				PKG000005 /* Tokenizers */,
+				PKG000006 /* MarkdownUI */,
 			);
 			productName = MLXStudio;
 			productReference = CC000001 /* MLXStudio.app */;
@@ -272,6 +321,7 @@
 				PKGREF001 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 				PKGREF002 /* XCRemoteSwiftPackageReference "swift-huggingface" */,
 				PKGREF003 /* XCRemoteSwiftPackageReference "swift-transformers" */,
+				PKGREF004 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EE000003 /* Products */;
@@ -325,6 +375,16 @@
 				AA000026 /* InferencePreset.swift in Sources */,
 				AA000027 /* DeveloperView.swift in Sources */,
 				AA000028 /* DeveloperPlaygroundView.swift in Sources */,
+				AA000029 /* ChatViewModel.swift in Sources */,
+				AA000030 /* ReasoningConfig.swift in Sources */,
+				AA000031 /* ReasoningEventEmitter.swift in Sources */,
+				AA000032 /* ThinkingBlockView.swift in Sources */,
+				AA000033 /* CommunityModel.swift in Sources */,
+				AA000034 /* CommunityCatalogService.swift in Sources */,
+				AA000035 /* CommunityCatalogView.swift in Sources */,
+				AA000036 /* StudioCodeHighlighter.swift in Sources */,
+				AA000037 /* DownloadQueue.swift in Sources */,
+				AA000038 /* DownloadQueueView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,13 +447,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AD_HOC_CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGN_ENTITLEMENTS = MLXStudio/MLXStudio.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "MLX Studio";
@@ -406,7 +468,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mlxstudio.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
@@ -418,13 +480,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				AD_HOC_CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGN_ENTITLEMENTS = MLXStudio/MLXStudio.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
-				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "MLX Studio";
@@ -437,7 +501,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mlxstudio.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				REGISTER_APP_GROUPS = YES;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
@@ -447,20 +511,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		GG000002 /* Build configuration list for PBXProject "MLXStudio" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				HH000001 /* Debug */,
-				HH000002 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		FF000002 /* Build configuration list for PBXNativeTarget "MLXStudio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				HH000003 /* Debug */,
 				HH000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		GG000002 /* Build configuration list for PBXProject "MLXStudio" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				HH000001 /* Debug */,
+				HH000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -492,6 +556,14 @@
 				minimumVersion = 1.3.0;
 			};
 		};
+		PKGREF004 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -515,8 +587,12 @@
 			package = PKGREF003 /* XCRemoteSwiftPackageReference "swift-transformers" */;
 			productName = Tokenizers;
 		};
+		PKG000006 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKGREF004 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
+		};
 /* End XCSwiftPackageProductDependency section */
-
 	};
 	rootObject = GG000001 /* Project object */;
 }

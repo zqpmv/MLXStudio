@@ -13,8 +13,7 @@ struct ServerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Form {
+        Form {
             Section("Local Server") {
                 Toggle("Enable Local Server", isOn: Binding(
                     get: { server.isRunning },
@@ -57,12 +56,6 @@ struct ServerView: View {
 
                 LabeledContent("Process") {
                     Text(server.isRunning ? "Running" : "Stopped")
-                }
-
-                if let probed = server.lastProbeAt {
-                    LabeledContent("Last check") {
-                        Text(probed, style: .relative)
-                    }
                 }
             }
 
@@ -129,42 +122,35 @@ struct ServerView: View {
                         .font(.caption)
                 }
             }
-            }
-            .formStyle(.grouped)
 
-            Divider()
-            logPane
-                .frame(height: 220)
+            Section("Log") {
+                Color.clear
+                    .frame(height: 160)
+                    .overlay(alignment: .topLeading) {
+                        ScrollViewReader { proxy in
+                            ScrollView {
+                                Text(server.log.isEmpty ? "Server output will appear here." : server.log)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(server.log.isEmpty ? .secondary : .primary)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id("log-bottom")
+                            }
+                            .scrollContentBackground(.hidden)
+                            .scrollIndicators(.automatic, axes: .vertical)
+                            .onChange(of: server.log) {
+                                proxy.scrollTo("log-bottom", anchor: .bottom)
+                            }
+                        }
+                    }
+            }
         }
+        .formStyle(.grouped)
         .navigationTitle("Local Server")
         .task {
             appState.connectMLXLMIfReady()
             await server.refreshFromServer()
         }
-    }
-
-    private var logPane: some View {
-        Form {
-            Section("Log") {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        Text(server.log.isEmpty ? "Server output will appear here." : server.log)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(server.log.isEmpty ? .secondary : .primary)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .id("log-bottom")
-                    }
-                    .frame(height: 148)
-                    .onChange(of: server.log) {
-                        proxy.scrollTo("log-bottom", anchor: .bottom)
-                    }
-                }
-                .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
-            }
-        }
-        .formStyle(.grouped)
-        .scrollDisabled(true)
     }
 
     private var httpStatusLabel: String {
@@ -203,7 +189,9 @@ struct ServerView: View {
         if enabled {
             guard mlxReady else { return }
             appState.connectMLXLMIfReady()
-            try? await server.start(model: appState.engine.selectedModel.huggingFaceID)
+            // Start without preloading a model so the HTTP port comes up immediately;
+            // mlx-lm loads the requested model lazily on the first chat/completions call.
+            try? await server.start()
         } else {
             server.stop()
         }

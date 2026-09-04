@@ -17,7 +17,7 @@ else
   exit 1
 fi
 
-ARGS=(-m mlx_lm.server --host "${HOST}" --port "${PORT}")
+ARGS=(-m mlx_lm server --host "${HOST}" --port "${PORT}")
 if [[ -n "${MODEL}" ]]; then
   ARGS+=(--model "${MODEL}")
 fi

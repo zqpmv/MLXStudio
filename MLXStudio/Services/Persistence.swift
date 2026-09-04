@@ -9,6 +9,7 @@ struct PersistedAppState: Codable {
     var customHuggingFaceIDs: [String]
     var customPresets: [InferencePreset]?
     var selectedPresetID: UUID?
+    var gpuCacheLimitMB: Int?
 }
 
 enum Persistence {
