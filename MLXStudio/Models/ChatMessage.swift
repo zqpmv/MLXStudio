@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 enum MessageRole: String, Codable, Sendable {
     case system
@@ -7,17 +8,37 @@ enum MessageRole: String, Codable, Sendable {
 }
 
 @Observable
-final class ChatMessage: Identifiable, @unchecked Sendable {
+final class ChatMessage: Identifiable, Codable, @unchecked Sendable {
     let id: UUID
     let role: MessageRole
     var content: String
     let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, role, content, createdAt
+    }
 
     init(id: UUID = UUID(), role: MessageRole, content: String, createdAt: Date = .now) {
         self.id = id
         self.role = role
         self.content = content
         self.createdAt = createdAt
+    }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        role = try container.decode(MessageRole.self, forKey: .role)
+        content = try container.decode(String.self, forKey: .content)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(role, forKey: .role)
+        try container.encode(content, forKey: .content)
+        try container.encode(createdAt, forKey: .createdAt)
     }
 
     static func system(_ content: String) -> ChatMessage {
@@ -33,7 +54,7 @@ final class ChatMessage: Identifiable, @unchecked Sendable {
     }
 }
 
-struct Conversation: Identifiable, Equatable {
+struct Conversation: Identifiable, Equatable, Codable {
     let id: UUID
     var title: String
     var messages: [ChatMessage]

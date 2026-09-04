@@ -31,13 +31,16 @@ final class MLXLMEnvironment {
     static let preferPythonServerKey = "mlxstudio.prefer.python.server"
 
     var setupCompleted: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.setupCompletedKey) }
-        set { UserDefaults.standard.set(newValue, forKey: Self.setupCompletedKey) }
+        didSet { UserDefaults.standard.set(setupCompleted, forKey: Self.setupCompletedKey) }
     }
 
     var preferPythonServer: Bool {
-        get { UserDefaults.standard.bool(forKey: Self.preferPythonServerKey) }
-        set { UserDefaults.standard.set(newValue, forKey: Self.preferPythonServerKey) }
+        didSet { UserDefaults.standard.set(preferPythonServer, forKey: Self.preferPythonServerKey) }
+    }
+
+    init() {
+        setupCompleted = UserDefaults.standard.bool(forKey: Self.setupCompletedKey)
+        preferPythonServer = UserDefaults.standard.bool(forKey: Self.preferPythonServerKey)
     }
 
     var supportDirectory: URL {
@@ -133,13 +136,15 @@ final class MLXLMEnvironment {
             try FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
             copyBundledScriptsIfNeeded()
 
+            let python = try await preferredPythonExecutable()
+            appendLog("Using Python at \(python)")
             appendLog("Creating Python virtual environment…")
             if FileManager.default.fileExists(atPath: venvDirectory.path) {
                 try FileManager.default.removeItem(at: venvDirectory)
             }
 
             try await runCommand(
-                executable: "/usr/bin/python3",
+                executable: python,
                 arguments: ["-m", "venv", venvDirectory.path],
                 workingDirectory: supportDirectory
             )
@@ -175,6 +180,35 @@ final class MLXLMEnvironment {
         }
     }
 
+    private static let pythonCandidates = [
+        "/opt/homebrew/bin/python3",
+        "/usr/local/bin/python3",
+        "/usr/bin/python3",
+    ]
+
+    private func preferredPythonExecutable() async throws -> String {
+        for path in Self.pythonCandidates {
+            if await isUsablePython(path) {
+                return path
+            }
+        }
+        throw MLXLMEnvironmentError.pythonNotFound
+    }
+
+    private func isUsablePython(_ path: String) async -> Bool {
+        guard FileManager.default.isExecutableFile(atPath: path) else { return false }
+        do {
+            let output = try await runCommandCapture(
+                executable: path,
+                arguments: ["-c", "import sys; print(sys.version_info.major)"],
+                workingDirectory: supportDirectory
+            )
+            return output.trimmingCharacters(in: .whitespacesAndNewlines) == "3"
+        } catch {
+            return false
+        }
+    }
+
     private func probePython(at path: String, source: MLXLMSource) async -> MLXLMStatus? {
         guard FileManager.default.isExecutableFile(atPath: path) else { return nil }
 
@@ -187,7 +221,17 @@ final class MLXLMEnvironment {
                 ],
                 workingDirectory: supportDirectory
             )
-            let version = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lines = output
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            let version = lines.last { line in
+                let lower = line.lowercased()
+                return !lower.contains("warning")
+                    && !lower.contains("urllib3")
+                    && !lower.contains("notopenssl")
+                    && !line.hasPrefix("/")
+            } ?? lines.last ?? ""
             guard !version.isEmpty, !version.contains("ModuleNotFoundError"), !version.contains("Traceback") else {
                 return nil
             }
@@ -259,6 +303,7 @@ final class MLXLMEnvironment {
 enum MLXLMEnvironmentError: LocalizedError {
     case commandFailed(command: String, code: Int32, output: String)
     case verificationFailed
+    case pythonNotFound
 
     var errorDescription: String? {
         switch self {
@@ -266,6 +311,8 @@ enum MLXLMEnvironmentError: LocalizedError {
             "Command failed (\(code)): \(command)\n\(output)"
         case .verificationFailed:
             "mlx-lm was installed but could not be imported."
+        case .pythonNotFound:
+            "Python 3 was not found. Install Xcode Command Line Tools or Homebrew Python."
         }
     }
 }

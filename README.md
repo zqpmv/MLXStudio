@@ -11,9 +11,10 @@ Native macOS application for running and managing MLX language models locally �
 - **Chat** — multi-turn conversations with streaming responses
 - **Model catalog** — curated MLX models (Qwen3, Llama 3.2, Gemma, Phi-4, SmolLM)
 - **Custom models** — load any model from Hugging Face (`mlx-community/*`)
-- **Inspector panel** — system prompt, temperature, top-p, max tokens
-- **Local API server** — OpenAI-compatible endpoints (`/v1/chat/completions`, `/v1/models`)
+- **Developer** — inference presets, sampling, playground, and Local Server
+- **Local Server** — mlx-lm OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`)
 - **Native UI** — `NavigationSplitView`, sidebar, inspector, Settings window
+- **Persistence** — chats, generation settings, and custom models survive relaunch
 
 ## Requirements
 
@@ -44,7 +45,9 @@ On first launch MLX Studio checks for **mlx-lm** (Python). If missing, it offers
 ./Scripts/uninstall-mlx-lm.sh
 ```
 
-After install, enable **Use mlx-lm server** in the **Server** tab to run the Python backend on port 8080.
+After install, enable **Local Server** in **Developer** to start `mlx_lm.server` on port 8080.
+
+Installation starts only after you click **Install mlx-lm**. App sandbox is disabled so the installer and Python server can run.
 
 ## Getting Started
 
@@ -77,10 +80,10 @@ Browse featured models, search by name, or add a custom Hugging Face ID:
 mlx-community/Qwen3-4B-4bit
 ```
 
-### Local API Server
+### Local Server
 
-1. Open **Server** in the sidebar.
-2. Enable **Local Server** (default port: `8080`).
+1. Open **Developer → Local Server**.
+2. Enable **Local Server** (default port: `8080`). MLX Studio reads models and status from the mlx-lm HTTP API.
 3. Use from any OpenAI-compatible client:
 
 ```bash
@@ -102,9 +105,9 @@ MLXStudio/
 ├── AppState.swift          # Global state (engine, server, conversations)
 ├── Models/                 # Data models
 ├── Services/
-│   ├── MLXEngine.swift     # Model loading & inference (mlx-swift-lm)
-│   ├── HubIntegration.swift # Hugging Face downloader/tokenizer bridge
-│   └── LocalAPIServer.swift # OpenAI-compatible HTTP server
+│   ├── MLXEngine.swift          # Chat inference (mlx-swift-lm)
+│   ├── HubIntegration.swift     # Hugging Face downloader/tokenizer bridge
+│   └── MLXLMProcessManager.swift # mlx-lm local server
 └── Views/                  # SwiftUI views
 ```
 

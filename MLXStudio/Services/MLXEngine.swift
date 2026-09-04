@@ -22,11 +22,17 @@ final class MLXEngine {
     var state: EngineState = .idle
     var generationSettings = GenerationSettings()
     var downloadProgress: Progress?
+    var downloadFraction: Double = 0
+    var downloadCompletedBytes: Int64 = 0
+    var downloadTotalBytes: Int64 = 0
+    var downloadBytesPerSecond: Double = 0
     var lastTokensPerSecond: Double = 0
 
     private var modelCache = NSCache<NSString, ModelContainer>()
     private var chatSession: ChatSession?
     private var activeStreamTask: Task<Void, Never>?
+    private var lastDownloadSampleDate: Date?
+    private var lastDownloadSampleBytes: Int64 = 0
 
     init() {
         modelCache.countLimit = 3
@@ -52,6 +58,7 @@ final class MLXEngine {
         chatSession = nil
         loadedModelID = nil
         modelCache.removeAllObjects()
+        resetDownloadStats()
         state = .idle
     }
 
@@ -72,22 +79,27 @@ final class MLXEngine {
 
         let factory = LLMModelFactory.shared
 
-        let container = try await factory.loadContainer(
-            from: HuggingFaceIntegration.sharedDownloader,
-            using: HuggingFaceIntegration.sharedTokenizerLoader,
-            configuration: selectedModel.configuration
-        ) { [weak self] progress in
-            Task { @MainActor in
-                self?.downloadProgress = progress
-                self?.state = .downloading(progress: progress.fractionCompleted)
+        do {
+            let container = try await factory.loadContainer(
+                from: HuggingFaceIntegration.sharedDownloader,
+                using: HuggingFaceIntegration.sharedTokenizerLoader,
+                configuration: selectedModel.configuration
+            ) { [weak self] progress in
+                Task { @MainActor in
+                    self?.recordDownload(progress)
+                }
             }
-        }
 
-        modelCache.setObject(container, forKey: selectedModel.id as NSString)
-        chatSession = makeSession(with: container)
-        loadedModelID = selectedModel.id
-        downloadProgress = nil
-        state = .ready
+            modelCache.setObject(container, forKey: selectedModel.id as NSString)
+            chatSession = makeSession(with: container)
+            loadedModelID = selectedModel.id
+            resetDownloadStats()
+            state = .ready
+        } catch {
+            resetDownloadStats()
+            state = .error(error.localizedDescription)
+            throw error
+        }
     }
 
     func ensureModelLoaded() async throws {
@@ -199,6 +211,49 @@ final class MLXEngine {
         if case .generating = state {
             state = .ready
         }
+    }
+
+    var isDownloading: Bool {
+        if case .downloading = state { return true }
+        return false
+    }
+
+    private func recordDownload(_ progress: Progress) {
+        downloadProgress = progress
+        downloadCompletedBytes = progress.completedUnitCount
+        downloadTotalBytes = max(progress.totalUnitCount, 0)
+        let fraction = progress.fractionCompleted
+        downloadFraction = fraction.isFinite ? min(max(fraction, 0), 1) : 0
+        state = .downloading(progress: downloadFraction)
+
+        let now = Date()
+        if let lastDate = lastDownloadSampleDate {
+            let elapsed = now.timeIntervalSince(lastDate)
+            if elapsed >= 0.2 {
+                let delta = Double(downloadCompletedBytes - lastDownloadSampleBytes)
+                if elapsed > 0, delta >= 0 {
+                    let instant = delta / elapsed
+                    downloadBytesPerSecond = downloadBytesPerSecond > 0
+                        ? downloadBytesPerSecond * 0.65 + instant * 0.35
+                        : instant
+                }
+                lastDownloadSampleDate = now
+                lastDownloadSampleBytes = downloadCompletedBytes
+            }
+        } else {
+            lastDownloadSampleDate = now
+            lastDownloadSampleBytes = downloadCompletedBytes
+        }
+    }
+
+    private func resetDownloadStats() {
+        downloadProgress = nil
+        downloadFraction = 0
+        downloadCompletedBytes = 0
+        downloadTotalBytes = 0
+        downloadBytesPerSecond = 0
+        lastDownloadSampleDate = nil
+        lastDownloadSampleBytes = 0
     }
 
     private func makeSession(with container: ModelContainer, systemPrompt: String? = nil) -> ChatSession {

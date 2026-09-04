@@ -6,24 +6,43 @@ struct ModelsView: View {
     @State private var customModelID = ""
     @State private var showCustomSheet = false
 
-    private var filteredModels: [LMModel] {
-        if searchText.isEmpty {
-            return ModelCatalog.featured
-        }
-        return ModelCatalog.featured.filter {
-            $0.displayName.localizedCaseInsensitiveContains(searchText) ||
-            $0.huggingFaceID.localizedCaseInsensitiveContains(searchText) ||
-            $0.description.localizedCaseInsensitiveContains(searchText)
-        }
+    private var customModels: [LMModel] {
+        appState.customHuggingFaceIDs.map { ModelCatalog.custom(huggingFaceID: $0) }
+    }
+
+    private var filteredCustom: [LMModel] {
+        filter(customModels)
+    }
+
+    private var filteredFeatured: [LMModel] {
+        filter(ModelCatalog.featured)
     }
 
     var body: some View {
         List(selection: Binding(
             get: { appState.engine.selectedModel },
-            set: { appState.engine.selectModel($0) }
+            set: { appState.selectModel($0) }
         )) {
+            if !filteredCustom.isEmpty {
+                Section("Custom Models") {
+                    ForEach(filteredCustom) { model in
+                        ModelRowView(
+                            model: model,
+                            isSelected: model.id == appState.engine.selectedModel.id,
+                            isLoaded: appState.engine.isModelLoaded && appState.engine.loadedModelID == model.id
+                        )
+                        .tag(model)
+                        .contextMenu {
+                            Button("Remove", role: .destructive) {
+                                appState.removeCustomModel(huggingFaceID: model.huggingFaceID)
+                            }
+                        }
+                    }
+                }
+            }
+
             Section("Featured Models") {
-                ForEach(filteredModels) { model in
+                ForEach(filteredFeatured) { model in
                     ModelRowView(
                         model: model,
                         isSelected: model.id == appState.engine.selectedModel.id,
@@ -49,6 +68,15 @@ struct ModelsView: View {
         }
     }
 
+    private func filter(_ models: [LMModel]) -> [LMModel] {
+        guard !searchText.isEmpty else { return models }
+        return models.filter {
+            $0.displayName.localizedCaseInsensitiveContains(searchText) ||
+            $0.huggingFaceID.localizedCaseInsensitiveContains(searchText) ||
+            $0.description.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
     private var customModelSheet: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Add Custom Model")
@@ -66,8 +94,7 @@ struct ModelsView: View {
                 Button("Add") {
                     let id = customModelID.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !id.isEmpty else { return }
-                    let model = ModelCatalog.custom(huggingFaceID: id)
-                    appState.engine.selectModel(model)
+                    appState.addCustomModel(huggingFaceID: id)
                     showCustomSheet = false
                     customModelID = ""
                 }

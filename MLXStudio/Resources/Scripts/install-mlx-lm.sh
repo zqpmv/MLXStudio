@@ -4,7 +4,15 @@ set -euo pipefail
 
 SUPPORT_DIR="${HOME}/Library/Application Support/MLXStudio"
 VENV_DIR="${SUPPORT_DIR}/venv"
-PYTHON="${PYTHON:-python3}"
+if [[ -z "${PYTHON:-}" ]]; then
+  if [[ -x /opt/homebrew/bin/python3 ]]; then
+    PYTHON="/opt/homebrew/bin/python3"
+  elif [[ -x /usr/local/bin/python3 ]]; then
+    PYTHON="/usr/local/bin/python3"
+  else
+    PYTHON="python3"
+  fi
+fi
 
 echo "==> MLX Studio: installing mlx-lm"
 echo "    Support dir: ${SUPPORT_DIR}"

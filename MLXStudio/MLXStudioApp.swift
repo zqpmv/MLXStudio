@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct MLXStudioApp: App {
     @State private var appState = AppState()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -23,9 +24,14 @@ struct MLXStudioApp: App {
                     appState.connectMLXLMIfReady()
                 }
             }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background || phase == .inactive {
+                    appState.persistNow()
+                }
+            }
         }
         .windowStyle(.automatic)
-        .defaultSize(width: 1200, height: 780)
+        .defaultSize(width: 960, height: 640)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Chat") {
@@ -33,9 +39,26 @@ struct MLXStudioApp: App {
                 }
                 .keyboardShortcut("n", modifiers: [.command])
             }
-            CommandGroup(after: .appSettings) {
+            CommandGroup(after: .appInfo) {
+                Button("Chat") {
+                    appState.openSection(.chat)
+                }
+                .keyboardShortcut("1", modifiers: [.command])
+
+                Button("Model") {
+                    appState.openSection(.models)
+                }
+                .keyboardShortcut("2", modifiers: [.command])
+
+                Button("Developer") {
+                    appState.openSection(.developer)
+                }
+                .keyboardShortcut("3", modifiers: [.command])
+
+                Divider()
+
                 Button("Setup mlx-lm…") {
-                    appState.mlxLMEnvironment.setupCompleted = false
+                    appState.reopenSetup()
                 }
             }
         }

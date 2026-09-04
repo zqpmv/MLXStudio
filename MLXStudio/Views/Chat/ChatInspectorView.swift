@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ChatInspectorView: View {
+    @Environment(AppState.self) private var appState
     @Binding var settings: GenerationSettings
     let selectedModel: LMModel
     let engineState: EngineState
@@ -17,7 +18,7 @@ struct ChatInspectorView: View {
                     get: { selectedModel },
                     set: { onModelChange($0) }
                 )) {
-                    ForEach(ModelCatalog.availableModels(including: selectedModel)) { model in
+                    ForEach(appState.catalogModels) { model in
                         Text(model.displayName).tag(model)
                     }
                 }
@@ -41,6 +42,11 @@ struct ChatInspectorView: View {
                 TextEditor(text: $settings.systemPrompt)
                     .font(.body)
                     .frame(minHeight: 80)
+                if !settings.extraInstructions.isEmpty {
+                    Text("Extra instructions are on in Developer.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section("Sampling") {
@@ -66,6 +72,12 @@ struct ChatInspectorView: View {
                     LabeledContent("Speed") {
                         Text(String(format: "%.1f tok/s", tokensPerSecond))
                     }
+                }
+            }
+
+            Section {
+                Button("Open Developer…") {
+                    appState.openDeveloper()
                 }
             }
         }

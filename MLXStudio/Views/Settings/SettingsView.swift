@@ -52,9 +52,9 @@ struct GeneralSettingsTab: View {
             Section("Default Model") {
                 Picker("Model", selection: Binding(
                     get: { appState.engine.selectedModel },
-                    set: { appState.engine.selectModel($0) }
+                    set: { appState.selectModel($0) }
                 )) {
-                    ForEach(ModelCatalog.availableModels(including: appState.engine.selectedModel)) { model in
+                    ForEach(appState.catalogModels) { model in
                         Text(model.displayName).tag(model)
                     }
                 }
@@ -97,7 +97,7 @@ struct AdvancedSettingsTab: View {
 
                 HStack {
                     Button("Open Setup") {
-                        appState.mlxLMEnvironment.setupCompleted = false
+                        appState.reopenSetup()
                     }
                     Button("Recheck") {
                         Task { await appState.mlxLMEnvironment.checkInstallation() }

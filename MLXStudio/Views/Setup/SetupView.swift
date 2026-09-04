@@ -178,11 +178,18 @@ struct SetupView: View {
                 .buttonStyle(.borderedProminent)
             }
 
-            Button(canContinue ? "Continue" : "Skip for Now") {
-                appState.completeSetup()
+            if canContinue {
+                Button("Continue") {
+                    appState.completeSetup()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button("Skip for Now") {
+                    appState.completeSetup()
+                }
+                .keyboardShortcut(.defaultAction)
             }
-            .keyboardShortcut(.defaultAction)
-            .disabled(isInstalling)
         }
         .padding(20)
     }
@@ -198,9 +205,4 @@ struct SetupView: View {
         appState.mlxLMEnvironment.status.isReady
     }
 
-    private var isInstalling: Bool {
-        if case .installing = appState.mlxLMEnvironment.status { return true }
-        if case .checking = appState.mlxLMEnvironment.status { return true }
-        return false
-    }
 }

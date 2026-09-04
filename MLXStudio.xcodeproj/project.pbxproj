@@ -14,7 +14,6 @@
 		AA000005 /* GenerationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000005; };
 		AA000006 /* MLXEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000006; };
 		AA000007 /* ModelStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000007; };
-		AA000008 /* LocalAPIServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000008; };
 		AA000009 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000009; };
 		AA000010 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000010; };
 		AA000011 /* MessageBubbleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000011; };
@@ -24,6 +23,10 @@
 		AA000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000015; };
 		AA000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BB000016; };
 		AA000017 /* HubIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000018; };
+		AA000025 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000026; };
+		AA000026 /* InferencePreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000027; };
+		AA000027 /* DeveloperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000028; };
+		AA000028 /* DeveloperPlaygroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000029; };
 		AA000018 /* MLXLMEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000019; };
 		AA000019 /* MLXLMProcessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000020; };
 		AA000020 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000021; };
@@ -42,7 +45,6 @@
 		BB000005 /* GenerationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationSettings.swift; sourceTree = "<group>"; };
 		BB000006 /* MLXEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXEngine.swift; sourceTree = "<group>"; };
 		BB000007 /* ModelStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStorage.swift; sourceTree = "<group>"; };
-		BB000008 /* LocalAPIServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAPIServer.swift; sourceTree = "<group>"; };
 		BB000009 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		BB000010 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		BB000011 /* MessageBubbleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubbleView.swift; sourceTree = "<group>"; };
@@ -53,6 +55,10 @@
 		BB000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BB000017 /* MLXStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MLXStudio.entitlements; sourceTree = "<group>"; };
 		BB000018 /* HubIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubIntegration.swift; sourceTree = "<group>"; };
+		BB000026 /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
+		BB000027 /* InferencePreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferencePreset.swift; sourceTree = "<group>"; };
+		BB000028 /* DeveloperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperView.swift; sourceTree = "<group>"; };
+		BB000029 /* DeveloperPlaygroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperPlaygroundView.swift; sourceTree = "<group>"; };
 		BB000019 /* MLXLMEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMEnvironment.swift; sourceTree = "<group>"; };
 		BB000020 /* MLXLMProcessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLXLMProcessManager.swift; sourceTree = "<group>"; };
 		BB000021 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
@@ -109,6 +115,7 @@
 				BB000003 /* ChatMessage.swift */,
 				BB000004 /* LMModel.swift */,
 				BB000005 /* GenerationSettings.swift */,
+				BB000027 /* InferencePreset.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -118,10 +125,10 @@
 			children = (
 				BB000006 /* MLXEngine.swift */,
 				BB000007 /* ModelStorage.swift */,
-				BB000008 /* LocalAPIServer.swift */,
 				BB000018 /* HubIntegration.swift */,
 				BB000019 /* MLXLMEnvironment.swift */,
 				BB000020 /* MLXLMProcessManager.swift */,
+				BB000026 /* Persistence.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -135,6 +142,7 @@
 				EE000010 /* Server */,
 				EE000011 /* Settings */,
 				EE000012 /* Setup */,
+				EE000014 /* Developer */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -165,6 +173,15 @@
 				BB000025 /* uninstall-mlx-lm.sh */,
 			);
 			path = Scripts;
+			sourceTree = "<group>";
+		};
+		EE000014 /* Developer */ = {
+			isa = PBXGroup;
+			children = (
+				BB000028 /* DeveloperView.swift */,
+				BB000029 /* DeveloperPlaygroundView.swift */,
+			);
+			path = Developer;
 			sourceTree = "<group>";
 		};
 		EE000008 /* Chat */ = {
@@ -293,7 +310,6 @@
 				AA000005 /* GenerationSettings.swift in Sources */,
 				AA000006 /* MLXEngine.swift in Sources */,
 				AA000007 /* ModelStorage.swift in Sources */,
-				AA000008 /* LocalAPIServer.swift in Sources */,
 				AA000009 /* ContentView.swift in Sources */,
 				AA000010 /* ChatView.swift in Sources */,
 				AA000011 /* MessageBubbleView.swift in Sources */,
@@ -305,6 +321,10 @@
 				AA000018 /* MLXLMEnvironment.swift in Sources */,
 				AA000019 /* MLXLMProcessManager.swift in Sources */,
 				AA000020 /* SetupView.swift in Sources */,
+				AA000025 /* Persistence.swift in Sources */,
+				AA000026 /* InferencePreset.swift in Sources */,
+				AA000027 /* DeveloperView.swift in Sources */,
+				AA000028 /* DeveloperPlaygroundView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

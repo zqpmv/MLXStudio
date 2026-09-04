@@ -5,20 +5,18 @@ struct ContentView: View {
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
-        @Bindable var appState = appState
-
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView(selection: $appState.sidebarSelection)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
-        } content: {
-            switch appState.sidebarSelection {
-            case .chat:
-                ChatSidebarView()
-            case .models:
-                ModelsView()
-            case .server:
-                ServerView()
+            Group {
+                switch appState.sidebarSelection {
+                case .chat:
+                    ChatSidebarView()
+                case .models:
+                    ModelsView()
+                case .developer:
+                    DeveloperSidebarView()
+                }
             }
+            .navigationSplitViewColumnWidth(min: 280, ideal: 320, max: 420)
         } detail: {
             switch appState.sidebarSelection {
             case .chat:
@@ -29,28 +27,11 @@ struct ContentView: View {
                 }
             case .models:
                 ModelDetailView()
-            case .server:
-                ServerDetailView()
+            case .developer:
+                DeveloperDetailView()
             }
         }
         .navigationTitle(appState.sidebarSelection.rawValue)
-    }
-}
-
-struct SidebarView: View {
-    @Binding var selection: SidebarItem
-
-    var body: some View {
-        List(selection: $selection) {
-            Section {
-                ForEach(SidebarItem.allCases) { item in
-                    Label(item.rawValue, systemImage: item.icon)
-                        .tag(item)
-                }
-            }
-        }
-        .listStyle(.sidebar)
-        .navigationTitle("MLX Studio")
     }
 }
 
@@ -64,13 +45,8 @@ struct ChatSidebarView: View {
         )) {
             Section("Conversations") {
                 ForEach(appState.conversations) { conversation in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(conversation.title)
-                            .lineLimit(1)
-                        Text(conversation.updatedAt, style: .relative)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(conversation.title)
+                        .lineLimit(1)
                     .tag(conversation.id)
                     .contextMenu {
                         Button("Delete", role: .destructive) {
@@ -120,6 +96,15 @@ struct ModelDetailView: View {
                 Text(model.description)
                     .foregroundStyle(.secondary)
 
+                if appState.engine.isDownloading {
+                    ModelDownloadProgressView(
+                        fraction: appState.engine.downloadFraction,
+                        completedBytes: appState.engine.downloadCompletedBytes,
+                        totalBytes: appState.engine.downloadTotalBytes,
+                        bytesPerSecond: appState.engine.downloadBytesPerSecond
+                    )
+                }
+
                 HStack(spacing: 12) {
                     Button {
                         Task { try? await appState.engine.loadModel() }
@@ -127,6 +112,7 @@ struct ModelDetailView: View {
                         Label("Load Model", systemImage: "arrow.down.circle")
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(appState.engine.isDownloading || appState.engine.state == .loading)
 
                     Button {
                         appState.engine.unloadModel()
@@ -134,7 +120,7 @@ struct ModelDetailView: View {
                         Label("Unload", systemImage: "eject")
                     }
                     .buttonStyle(.bordered)
-                    .disabled(!appState.engine.isModelLoaded)
+                    .disabled(!appState.engine.isModelLoaded || appState.engine.isDownloading)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -160,12 +146,18 @@ struct ModelStatusBadge: View {
 
     private var label: String {
         switch state {
-        case .idle: isLoaded ? "Ready" : "Not Loaded"
-        case .downloading: "Downloading…"
-        case .loading: "Loading…"
-        case .ready: "Ready"
-        case .generating: "Generating…"
-        case .error(let msg): msg
+        case .idle:
+            isLoaded ? "Ready" : "Not Loaded"
+        case .downloading(let progress):
+            "Downloading \(Int((progress * 100).rounded()))%"
+        case .loading:
+            "Loading…"
+        case .ready:
+            "Ready"
+        case .generating:
+            "Generating…"
+        case .error(let msg):
+            msg
         }
     }
 
@@ -179,70 +171,54 @@ struct ModelStatusBadge: View {
     }
 }
 
-struct ServerDetailView: View {
-    @Environment(AppState.self) private var appState
+struct ModelDownloadProgressView: View {
+    let fraction: Double
+    let completedBytes: Int64
+    let totalBytes: Int64
+    let bytesPerSecond: Double
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("API Endpoints")
-                    .font(.title2.bold())
+        VStack(alignment: .leading, spacing: 10) {
+            ProgressView(value: max(0, min(fraction, 1)))
+                .progressViewStyle(.linear)
 
-                EndpointRow(method: "GET", path: "/v1/models", description: "List loaded model")
-                EndpointRow(method: "POST", path: "/v1/chat/completions", description: "OpenAI-compatible chat")
-                EndpointRow(method: "GET", path: "/health", description: "Health check")
-
-                Divider()
-
-                Text("Example Request")
-                    .font(.headline)
-
-                Text(exampleCurl)
-                    .font(.system(.caption, design: .monospaced))
-                    .padding(12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            HStack(alignment: .firstTextBaseline) {
+                Text(percentLabel)
+                    .font(.title3.monospacedDigit().weight(.semibold))
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(sizeLabel)
+                    Text(speedLabel)
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(32)
+        }
+        .padding(14)
+        .frame(maxWidth: 480)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var percentLabel: String {
+        "\(Int((max(0, min(fraction, 1)) * 100).rounded()))%"
+    }
+
+    private var sizeLabel: String {
+        if totalBytes > 0 {
+            "\(formatBytes(completedBytes)) of \(formatBytes(totalBytes))"
+        } else if completedBytes > 0 {
+            formatBytes(completedBytes)
+        } else {
+            "Preparing download…"
         }
     }
 
-    private var exampleCurl: String {
-        let url = appState.apiServer.baseURL
-        return """
-        curl \(url)/v1/chat/completions \\
-          -H "Content-Type: application/json" \\
-          -d '{
-            "model": "\(appState.engine.selectedModel.huggingFaceID)",
-            "messages": [{"role": "user", "content": "Hello!"}]
-          }'
-        """
+    private var speedLabel: String {
+        guard bytesPerSecond > 1 else { return "—" }
+        return "\(formatBytes(Int64(bytesPerSecond)))/s"
     }
-}
 
-struct EndpointRow: View {
-    let method: String
-    let path: String
-    let description: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(method)
-                .font(.caption.bold())
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(method == "GET" ? Color.blue.opacity(0.15) : Color.green.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .frame(width: 52)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(path)
-                    .font(.system(.body, design: .monospaced))
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
+    private func formatBytes(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: max(bytes, 0), countStyle: .file)
     }
 }

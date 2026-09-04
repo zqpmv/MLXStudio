@@ -6,79 +6,44 @@ struct ChatView: View {
 
     @State private var prompt = ""
     @State private var isGenerating = false
-    @State private var showInspector = true
     @State private var errorMessage: String?
     @State private var tokensPerSecond: Double = 0
     @State private var generateTask: Task<Void, Never>?
 
     var body: some View {
-        @Bindable var appState = appState
+        VStack(spacing: 0) {
+            chatHeader
 
-        HSplitView {
-            VStack(spacing: 0) {
-                chatHeader
-
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 16) {
-                            ForEach(messages) { message in
-                                MessageBubbleView(message: message)
-                                    .id(message.id)
-                            }
-                        }
-                        .padding()
-                    }
-                    .onChange(of: messages.count) {
-                        if let last = messages.last {
-                            withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        ForEach(visibleMessages) { message in
+                            MessageBubbleView(message: message)
+                                .id(message.id)
                         }
                     }
+                    .padding()
                 }
-
-                if let progress = appState.engine.downloadProgress, progress.fractionCompleted < 1 {
-                    ProgressView("Downloading model…", value: progress.fractionCompleted)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
+                .onChange(of: visibleMessages.count) {
+                    if let last = visibleMessages.last {
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
                 }
-
-                Divider()
-
-                chatInput
             }
 
-            if showInspector {
-                ChatInspectorView(
-                    settings: $appState.generationSettings,
-                    selectedModel: appState.engine.selectedModel,
-                    engineState: appState.engine.state,
-                    isModelLoaded: appState.engine.isModelLoaded,
-                    tokensPerSecond: tokensPerSecond,
-                    onLoadModel: { Task { try? await appState.engine.loadModel() } },
-                    onUnloadModel: { appState.engine.unloadModel() },
-                    onModelChange: { model in appState.engine.selectModel(model) }
-                )
-                .frame(minWidth: 260, idealWidth: 280, maxWidth: 320)
+            if let progress = appState.engine.downloadProgress, progress.fractionCompleted < 1 {
+                ProgressView("Downloading model…", value: progress.fractionCompleted)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
             }
+
+            Divider()
+
+            chatInput
         }
         .background(Color(nsColor: .textBackgroundColor))
         .toolbar {
-            ToolbarItemGroup {
-                Picker("Model", selection: Binding(
-                    get: { appState.engine.selectedModel },
-                    set: { appState.engine.selectModel($0) }
-                )) {
-                    ForEach(ModelCatalog.availableModels(including: appState.engine.selectedModel)) { model in
-                        Text(model.displayName).tag(model)
-                    }
-                }
-                .frame(width: 160)
-
-                Button {
-                    showInspector.toggle()
-                } label: {
-                    Label("Inspector", systemImage: "sidebar.right")
-                }
-
+            ToolbarItem {
                 Button {
                     clearChat()
                 } label: {
@@ -154,6 +119,10 @@ struct ChatView: View {
         appState.conversations.first { $0.id == conversation.id }?.messages ?? []
     }
 
+    private var visibleMessages: [ChatMessage] {
+        messages.filter { $0.role != .system }
+    }
+
     private func updateMessages(_ newMessages: [ChatMessage]) {
         guard let index = appState.conversations.firstIndex(where: { $0.id == conversation.id }) else { return }
         appState.conversations[index].messages = newMessages
@@ -164,6 +133,7 @@ struct ChatView: View {
                 appState.conversations[index].title = title
             }
         }
+        appState.schedulePersist()
     }
 
     private func sendMessage() {
@@ -176,9 +146,9 @@ struct ChatView: View {
 
         var currentMessages = messages
         if let systemIndex = currentMessages.firstIndex(where: { $0.role == .system }) {
-            currentMessages[systemIndex].content = appState.generationSettings.systemPrompt
+            currentMessages[systemIndex].content = appState.generationSettings.effectiveSystemPrompt
         } else {
-            currentMessages.insert(.system(appState.generationSettings.systemPrompt), at: 0)
+            currentMessages.insert(.system(appState.generationSettings.effectiveSystemPrompt), at: 0)
         }
         currentMessages.append(.user(text))
         currentMessages.append(.assistant(""))
@@ -210,6 +180,7 @@ struct ChatView: View {
                 }
             }
             isGenerating = false
+            appState.persistNow()
         }
     }
 
@@ -218,10 +189,12 @@ struct ChatView: View {
         generateTask = nil
         appState.engine.cancelGeneration()
         isGenerating = false
+        appState.persistNow()
     }
 
     private func clearChat() {
         stopGeneration()
-        updateMessages([.system(appState.generationSettings.systemPrompt)])
+        updateMessages([.system(appState.generationSettings.effectiveSystemPrompt)])
+        appState.persistNow()
     }
 }

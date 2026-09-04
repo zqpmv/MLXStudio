@@ -8,104 +8,172 @@ struct ServerView: View {
         appState.mlxLMEnvironment.status.isReady
     }
 
-    var body: some View {
-        Form {
-            mlxLMSection
+    private var server: MLXLMProcessManager {
+        appState.mlxLMProcess
+    }
 
-            Section {
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+            Section("Local Server") {
                 Toggle("Enable Local Server", isOn: Binding(
-                    get: { isServerRunning },
+                    get: { server.isRunning },
                     set: { enabled in
                         Task { await toggleServer(enabled) }
                     }
                 ))
+                .disabled(!mlxReady || isStarting)
+
+                Stepper(
+                    "Port: \(appState.serverSettings.port)",
+                    value: Binding(
+                        get: { appState.serverSettings.port },
+                        set: {
+                            appState.serverSettings.port = $0
+                            appState.connectMLXLMIfReady()
+                            appState.schedulePersist()
+                        }
+                    ),
+                    in: 1024...65535
+                )
+                .disabled(server.isRunning)
             }
 
-            Section("Connection") {
+            Section("Status") {
                 LabeledContent("Base URL") {
-                    Text(activeBaseURL)
+                    Text(server.baseURL)
                         .font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
                 }
 
-                LabeledContent("Backend") {
-                    Text(activeBackendLabel)
-                }
-
-                LabeledContent("Status") {
+                LabeledContent("HTTP") {
                     HStack(spacing: 6) {
                         Circle()
-                            .fill(isServerRunning ? .green : .secondary)
+                            .fill(server.isReachable ? .green : .secondary)
                             .frame(width: 8, height: 8)
-                        Text(isServerRunning ? "Running" : "Stopped")
+                        Text(httpStatusLabel)
                     }
                 }
 
-                if !appState.isPythonServerActive {
-                    LabeledContent("Requests") {
-                        Text("\(appState.apiServer.requestCount)")
+                LabeledContent("Process") {
+                    Text(server.isRunning ? "Running" : "Stopped")
+                }
+
+                if let probed = server.lastProbeAt {
+                    LabeledContent("Last check") {
+                        Text(probed, style: .relative)
                     }
                 }
             }
 
-            if !mlxReady || !appState.serverSettings.usePythonMLXServer {
-                nativeServerConfig
+            Section("Models") {
+                if server.models.isEmpty {
+                    Text(server.isReachable ? "No models reported." : "Start the local server to load models from mlx-lm.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(server.models) { model in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(model.id)
+                                .font(.system(.body, design: .monospaced))
+                                .textSelection(.enabled)
+                            Text(model.ownedBy)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Button("Refresh") {
+                    Task { await server.refreshFromServer() }
+                }
+                .disabled(!mlxReady)
             }
 
-            if let error = activeError {
+            Section("mlx-lm") {
+                mlxLMStatusLabel
+
+                if mlxReady, case .ready(let version, let path, let source) = appState.mlxLMEnvironment.status {
+                    LabeledContent("Version") { Text(version) }
+                    LabeledContent("Python") {
+                        Text(path)
+                            .font(.system(.caption, design: .monospaced))
+                            .lineLimit(1)
+                            .textSelection(.enabled)
+                    }
+                    LabeledContent("Source") {
+                        Text(source == .bundledVenv ? "Bundled venv" : "System Python")
+                    }
+                }
+
+                HStack {
+                    Button("Recheck") {
+                        Task {
+                            await appState.mlxLMEnvironment.checkInstallation()
+                            appState.connectMLXLMIfReady()
+                            await server.refreshFromServer()
+                        }
+                    }
+                    if !mlxReady {
+                        Button("Install mlx-lm") {
+                            appState.mlxLMEnvironment.install()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+
+            if let error = server.lastError {
                 Section {
                     Text(error)
                         .foregroundStyle(.red)
                         .font(.caption)
                 }
             }
+            }
+            .formStyle(.grouped)
+
+            Divider()
+            logPane
+                .frame(height: 220)
         }
-        .formStyle(.grouped)
-        .navigationTitle("Server")
+        .navigationTitle("Local Server")
+        .task {
+            appState.connectMLXLMIfReady()
+            await server.refreshFromServer()
+        }
     }
 
-    private var mlxLMSection: some View {
-        Section("mlx-lm (Python)") {
-            LabeledContent("Status") {
-                mlxLMStatusLabel
-            }
-
-            if mlxReady, case .ready(let version, let path, let source) = appState.mlxLMEnvironment.status {
-                LabeledContent("Version") { Text(version) }
-                LabeledContent("Python") {
-                    Text(path)
-                        .font(.system(.caption, design: .monospaced))
-                        .lineLimit(1)
-                }
-                LabeledContent("Source") {
-                    Text(source == .bundledVenv ? "Bundled venv" : "System Python")
-                }
-            }
-
-            Toggle("Use mlx-lm server", isOn: Binding(
-                get: { appState.serverSettings.usePythonMLXServer },
-                set: {
-                    appState.serverSettings.usePythonMLXServer = $0
-                    appState.mlxLMEnvironment.preferPythonServer = $0
-                    if !isServerRunning { appState.connectMLXLMIfReady() }
-                }
-            ))
-            .disabled(!mlxReady)
-
-            HStack {
-                Button("Recheck") {
-                    Task {
-                        await appState.mlxLMEnvironment.checkInstallation()
-                        appState.connectMLXLMIfReady()
+    private var logPane: some View {
+        Form {
+            Section("Log") {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        Text(server.log.isEmpty ? "Server output will appear here." : server.log)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(server.log.isEmpty ? .secondary : .primary)
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .id("log-bottom")
+                    }
+                    .frame(height: 148)
+                    .onChange(of: server.log) {
+                        proxy.scrollTo("log-bottom", anchor: .bottom)
                     }
                 }
-                if !mlxReady {
-                    Button("Install mlx-lm") {
-                        appState.mlxLMEnvironment.install()
-                    }
-                    .buttonStyle(.borderedProminent)
-                }
+                .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
             }
+        }
+        .formStyle(.grouped)
+        .scrollDisabled(true)
+    }
+
+    private var httpStatusLabel: String {
+        if server.isReachable {
+            "Reachable"
+        } else if server.isRunning {
+            "Starting…"
+        } else {
+            "Offline"
         }
     }
 
@@ -113,7 +181,7 @@ struct ServerView: View {
     private var mlxLMStatusLabel: some View {
         switch appState.mlxLMEnvironment.status {
         case .ready:
-            Label("Connected", systemImage: "checkmark.circle.fill")
+            Label("Ready", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
         case .installing:
             Label("Installing…", systemImage: "arrow.down.circle")
@@ -128,92 +196,16 @@ struct ServerView: View {
         }
     }
 
-    @ViewBuilder
-    private var nativeServerConfig: some View {
-        Section("Native Server") {
-            Stepper(
-                "Port: \(appState.serverSettings.port)",
-                value: Binding(
-                    get: { appState.serverSettings.port },
-                    set: {
-                        appState.serverSettings.port = $0
-                        appState.apiServer.settings = appState.serverSettings
-                        appState.connectMLXLMIfReady()
-                    }
-                ),
-                in: 1024...65535
-            )
-
-            Toggle("Require Authentication", isOn: Binding(
-                get: { appState.serverSettings.requireAuth },
-                set: {
-                    appState.serverSettings.requireAuth = $0
-                    appState.apiServer.settings = appState.serverSettings
-                }
-            ))
-
-            if appState.serverSettings.requireAuth {
-                LabeledContent("API Token") {
-                    Text(appState.serverSettings.apiToken)
-                        .font(.system(.caption, design: .monospaced))
-                        .textSelection(.enabled)
-                        .lineLimit(1)
-                }
-
-                Button("Regenerate Token") {
-                    appState.serverSettings.apiToken = UUID().uuidString
-                    appState.apiServer.settings = appState.serverSettings
-                }
-            }
-        }
-    }
-
-    private var isServerRunning: Bool {
-        appState.isPythonServerActive || appState.apiServer.isRunning
-    }
-
-    private var activeBaseURL: String {
-        if appState.isPythonServerActive {
-            appState.mlxLMProcess.baseURL
-        } else {
-            appState.apiServer.baseURL
-        }
-    }
-
-    private var activeBackendLabel: String {
-        if appState.isPythonServerActive {
-            "mlx-lm (Python)"
-        } else if appState.apiServer.isRunning {
-            "MLX Studio (Native)"
-        } else {
-            "Stopped"
-        }
-    }
-
-    private var activeError: String? {
-        appState.isPythonServerActive ? appState.mlxLMProcess.lastError : appState.apiServer.lastError
-    }
-
     private func toggleServer(_ enabled: Bool) async {
         isStarting = true
         defer { isStarting = false }
 
         if enabled {
-            if appState.serverSettings.usePythonMLXServer && appState.mlxLMEnvironment.status.isReady {
-                appState.connectMLXLMIfReady()
-                appState.apiServer.stop()
-                try? await appState.mlxLMProcess.start(
-                    model: appState.engine.selectedModel.huggingFaceID
-                )
-            } else {
-                appState.mlxLMProcess.stop()
-                appState.apiServer.settings = appState.serverSettings
-                appState.apiServer.engine = appState.engine
-                try? await appState.apiServer.start()
-            }
+            guard mlxReady else { return }
+            appState.connectMLXLMIfReady()
+            try? await server.start(model: appState.engine.selectedModel.huggingFaceID)
         } else {
-            appState.mlxLMProcess.stop()
-            appState.apiServer.stop()
+            server.stop()
         }
     }
 }
